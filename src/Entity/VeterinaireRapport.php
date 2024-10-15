@@ -20,17 +20,17 @@ class VeterinaireRapport
     #[ORM\Column(length: 180)]
     private ?string $nourriture = null;
 
-    #[ORM\Column(length: 180)]
-    private ?string $grammage = null;
+    #[ORM\Column(type: 'integer')]
+    private ?int $grammage = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $date_passage = null;
 
-    #[ORM\Column(length: 180)]
-    private ?string $id_animal = null;
-
     #[ORM\ManyToOne(inversedBy: 'veterinaireRapports')]
+    #[ORM\JoinColumn(nullable: false)]
     private ?Animal $animal = null;
+
+    // Getters et setters
 
     public function getId(): ?int
     {
@@ -45,7 +45,6 @@ class VeterinaireRapport
     public function setEtatAnimal(string $etat_animal): static
     {
         $this->etat_animal = $etat_animal;
-
         return $this;
     }
 
@@ -57,19 +56,17 @@ class VeterinaireRapport
     public function setNourriture(string $nourriture): static
     {
         $this->nourriture = $nourriture;
-
         return $this;
     }
 
-    public function getGrammage(): ?string
+    public function getGrammage(): ?int
     {
         return $this->grammage;
     }
 
-    public function setGrammage(string $grammage): static
+    public function setGrammage(int $grammage): static
     {
         $this->grammage = $grammage;
-
         return $this;
     }
 
@@ -81,19 +78,6 @@ class VeterinaireRapport
     public function setDatePassage(\DateTimeInterface $date_passage): static
     {
         $this->date_passage = $date_passage;
-
-        return $this;
-    }
-
-    public function getIdAnimal(): ?string
-    {
-        return $this->id_animal;
-    }
-
-    public function setIdAnimal(string $id_animal): static
-    {
-        $this->id_animal = $id_animal;
-
         return $this;
     }
 
@@ -105,7 +89,6 @@ class VeterinaireRapport
     public function setAnimal(?Animal $animal): static
     {
         $this->animal = $animal;
-
         return $this;
     }
 }
