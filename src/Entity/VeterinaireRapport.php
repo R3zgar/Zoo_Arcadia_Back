@@ -29,6 +29,9 @@ class VeterinaireRapport
     #[ORM\Column(length: 180)]
     private ?string $id_animal = null;
 
+    #[ORM\ManyToOne(inversedBy: 'veterinaireRapports')]
+    private ?Animal $animal = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -90,6 +93,18 @@ class VeterinaireRapport
     public function setIdAnimal(string $id_animal): static
     {
         $this->id_animal = $id_animal;
+
+        return $this;
+    }
+
+    public function getAnimal(): ?Animal
+    {
+        return $this->animal;
+    }
+
+    public function setAnimal(?Animal $animal): static
+    {
+        $this->animal = $animal;
 
         return $this;
     }
