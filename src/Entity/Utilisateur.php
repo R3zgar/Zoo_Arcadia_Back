@@ -57,8 +57,9 @@ class Utilisateur implements UserInterface
 
     public function getPassword(): string
     {
-        return $this->password;
+        return $this->password ?? ''; // Si le mot de passe est NULL, retourner une chaîne vide
     }
+
 
     public function setPassword(string $password): self
     {
