@@ -14,25 +14,28 @@ class Commentaire
     private ?int $id = null;
 
     #[ORM\Column(type: 'text')]
-    private ?string $texte = null;
+    private ?string $contenu = null; // texte yerine contenu kullanalım
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $date_creation = null;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $auteur = null;
 
     #[ORM\ManyToOne(targetEntity: Animal::class, inversedBy: 'commentaires')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Animal $animal = null;
 
-    // Getter pour texte
-    public function getTexte(): ?string
+    // Getter pour contenu
+    public function getContenu(): ?string
     {
-        return $this->texte;
+        return $this->contenu;
     }
 
-    // Setter pour texte
-    public function setTexte(string $texte): self
+    // Setter pour contenu
+    public function setContenu(string $contenu): self
     {
-        $this->texte = $texte;
+        $this->contenu = $contenu;
 
         return $this;
     }
@@ -47,6 +50,20 @@ class Commentaire
     public function setDateCreation(\DateTimeInterface $date_creation): self
     {
         $this->date_creation = $date_creation;
+
+        return $this;
+    }
+
+    // Getter pour auteur
+    public function getAuteur(): ?string
+    {
+        return $this->auteur;
+    }
+
+    // Setter pour auteur
+    public function setAuteur(string $auteur): self
+    {
+        $this->auteur = $auteur;
 
         return $this;
     }

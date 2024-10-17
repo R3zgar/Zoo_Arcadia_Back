@@ -3,8 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\Commentaire;
-use App\Repository\CommentaireRepository;
 use App\Repository\AnimalRepository;
+use App\Repository\CommentaireRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,23 +26,19 @@ class CommentaireController extends AbstractController
         // Décoder les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
-        // Vérifier si 'animal_id' est présent dans les données
-        if (!isset($data['animal_id'])) {
-            return $this->json(['message' => 'animal_id manquant.'], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Rechercher le animal par ID
+        // Rechercher l'animal par ID (assuré que l'animal_id est envoyé dans les données)
         $animal = $animalRepository->find($data['animal_id']);
 
-        // Si le animal n'existe pas, retourner une erreur
+        // Si l'animal n'existe pas, retourner une erreur
         if (!$animal) {
             return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
         }
 
         // Créer un nouvel objet Commentaire
         $commentaire = new Commentaire();
-        $commentaire->setTexte($data['texte'] ?? 'Texte par défaut');
-        $commentaire->setDateCreation(new \DateTime($data['date_creation'] ?? 'now'));
+        $commentaire->setAuteur($data['auteur'] ?? 'Anonyme');
+        $commentaire->setContenu($data['contenu'] ?? 'Aucun contenu');
+        $commentaire->setDateCreation(new \DateTime($data['date'] ?? 'now')); // setDateCreation kullanıldı
         $commentaire->setAnimal($animal); // Associer l'animal ici
 
         // Persister le commentaire dans la base de données
@@ -56,8 +52,7 @@ class CommentaireController extends AbstractController
         );
     }
 
-
-    // Lire un commentaire spécifique
+    // Lire (afficher un commentaire spécifique)
     #[Route('/{id}', name: 'show', methods: 'GET')]
     public function show(int $id, CommentaireRepository $commentaireRepository): Response
     {
@@ -71,7 +66,7 @@ class CommentaireController extends AbstractController
 
         // Retourner les informations du commentaire sous forme de JSON
         return $this->json(
-            ['message' => "Un Commentaire trouvé : {$commentaire->getTexte()} pour l'ID {$commentaire->getId()}"]
+            ['message' => "Un Commentaire trouvé : {$commentaire->getAuteur()} pour l'ID {$commentaire->getId()}"]
         );
     }
 
@@ -79,6 +74,11 @@ class CommentaireController extends AbstractController
     #[Route('/{id}', name: 'update', methods: 'PUT')]
     public function update(int $id, Request $request, CommentaireRepository $commentaireRepository, EntityManagerInterface $entityManager): Response
     {
+        // Vérifier si l'ID est bien un entier valide
+        if (!is_int($id)) {
+            return $this->json(['message' => "L'ID doit être un entier valide."], Response::HTTP_BAD_REQUEST);
+        }
+
         // Rechercher le commentaire par ID dans la base de données
         $commentaire = $commentaireRepository->find($id);
 
@@ -91,8 +91,9 @@ class CommentaireController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         // Mettre à jour les informations du commentaire
-        $commentaire->setTexte($data['texte'] ?? $commentaire->getTexte());
-        $commentaire->setDateCreation(new \DateTime($data['date_creation'] ?? 'now'));
+        $commentaire->setAuteur($data['auteur'] ?? $commentaire->getAuteur());
+        $commentaire->setContenu($data['contenu'] ?? $commentaire->getContenu());
+        $commentaire->setDateCreation(new \DateTime($data['date'] ?? $commentaire->getDateCreation()->format('Y-m-d'))); // setDateCreation kullanıldı
 
         // Sauvegarder les modifications dans la base de données
         $entityManager->flush();
@@ -101,7 +102,7 @@ class CommentaireController extends AbstractController
         return $this->json(['message' => "Commentaire mis à jour avec succès !"], Response::HTTP_OK);
     }
 
-    // Suppression d'un commentaire
+    // Supprimer un commentaire
     #[Route('/{id}', name: 'delete', methods: 'DELETE')]
     public function delete(int $id): Response
     {
@@ -120,7 +121,7 @@ class CommentaireController extends AbstractController
         // Retourner un message de confirmation avec le code 200 (succès)
         return $this->json(
             ['message' => 'Commentaire supprimé avec succès.'],
-            Response::HTTP_OK
+            Response::HTTP_OK // Statut 200 OK
         );
     }
 
@@ -130,13 +131,14 @@ class CommentaireController extends AbstractController
     {
         $commentaires = $commentaireRepository->findAll();
 
-        // Seul les informations basiques du commentaire sont retournées
+        // Seules les informations basiques du commentaire sont retournées pour éviter la référence circulaire
         $commentairesArray = [];
         foreach ($commentaires as $commentaire) {
             $commentairesArray[] = [
                 'id' => $commentaire->getId(),
-                'texte' => $commentaire->getTexte(),
-                'date_creation' => $commentaire->getDateCreation()->format('Y-m-d'),
+                'auteur' => $commentaire->getAuteur(),
+                'contenu' => $commentaire->getContenu(),
+                'date' => $commentaire->getDateCreation()->format('Y-m-d'),
             ];
         }
 
