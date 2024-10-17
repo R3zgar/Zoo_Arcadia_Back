@@ -11,15 +11,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
 
 #[Route('api/veterinaire_rapport', name: 'app_api_veterinaire_rapport')]
 class VeterinaireRapportController extends AbstractController
 {
-    // AnimalRepository de constructor'a eklendi
     public function __construct(
         private EntityManagerInterface $manager,
         private VeterinaireRapportRepository $repository,
-        private AnimalRepository $animalRepository // Ekleme burada yapıldı
+        private AnimalRepository $animalRepository,
+        private SerializerInterface $serializer // Serializer ajouté
     ) {
     }
 
@@ -27,10 +28,15 @@ class VeterinaireRapportController extends AbstractController
     #[Route(name: 'new', methods: 'POST')]
     public function new(Request $request): Response
     {
-        // Décoder les données JSON envoyées dans la requête
+        // Désérialiser les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
-        // Rechercher le animal par ID (assuré que l'animal_id est envoyé dans les données)
+        // Vérifier si l'animal_id est envoyé
+        if (!isset($data['animal_id'])) {
+            return $this->json(['message' => 'L\'animal_id est manquant.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Rechercher l'animal par ID
         $animal = $this->animalRepository->find($data['animal_id']);
 
         // Si l'animal n'existe pas, retourner une erreur
@@ -38,13 +44,11 @@ class VeterinaireRapportController extends AbstractController
             return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
         }
 
-        // Créer un nouvel objet VeterinaireRapport
-        $rapport = new VeterinaireRapport();
-        $rapport->setEtatAnimal($data['etat_animal']);
-        $rapport->setNourriture($data['nourriture']);
-        $rapport->setGrammage($data['grammage']);
-        $rapport->setDatePassage(new \DateTime($data['date_passage']));
-        $rapport->setAnimal($animal); // Associer l'animal ici
+        // Créer un nouvel objet rapport
+        $rapport = $this->serializer->deserialize($request->getContent(), VeterinaireRapport::class, 'json');
+
+        // Associer l'animal au rapport
+        $rapport->setAnimal($animal);
 
         // Persister le rapport dans la base de données
         $this->manager->persist($rapport);
@@ -75,9 +79,9 @@ class VeterinaireRapportController extends AbstractController
         );
     }
 
-    // Mettre à jour un rapport existant
+// Mettre à jour un rapport existant
     #[Route('/{id}', name: 'update', methods: 'PUT')]
-    public function update(int $id, Request $request, VeterinaireRapportRepository $veterinaireRapportRepository, EntityManagerInterface $entityManager): Response
+    public function update(int $id, Request $request, VeterinaireRapportRepository $veterinaireRapportRepository, EntityManagerInterface $entityManager, SerializerInterface $serializer): Response
     {
         // Rechercher le rapport par ID dans la base de données
         $rapport = $veterinaireRapportRepository->find($id);
@@ -87,14 +91,22 @@ class VeterinaireRapportController extends AbstractController
             return $this->json(['message' => "Rapport non trouvé pour l'ID {$id}"], Response::HTTP_NOT_FOUND);
         }
 
-        // Décoder les données JSON envoyées dans la requête
+        // Désérialiser les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
-        // Mettre à jour les informations du rapport
+        // Mise à jour des informations du rapport à partir des données reçues
         $rapport->setEtatAnimal($data['etat_animal'] ?? $rapport->getEtatAnimal());
         $rapport->setNourriture($data['nourriture'] ?? $rapport->getNourriture());
         $rapport->setGrammage($data['grammage'] ?? $rapport->getGrammage());
-        $rapport->setDatePassage(new \DateTime($data['date_passage'] ?? 'now'));
+
+        // Vérifier si la date_passage est présente et si c'est un string, sinon ne pas changer
+        if (isset($data['date_passage']) && is_string($data['date_passage'])) {
+            try {
+                $rapport->setDatePassage(new \DateTime($data['date_passage']));
+            } catch (\Exception $e) {
+                return $this->json(['message' => 'Format de date invalide.'], Response::HTTP_BAD_REQUEST);
+            }
+        }
 
         // Sauvegarder les modifications dans la base de données
         $entityManager->flush();
@@ -132,7 +144,7 @@ class VeterinaireRapportController extends AbstractController
     {
         $rapports = $veterinaireRapportRepository->findAll();
 
-        // Seul les informations basiques du rapport sont retournées
+        // Seules les informations basiques du rapport sont retournées
         $rapportsArray = [];
         foreach ($rapports as $rapport) {
             $rapportsArray[] = [
