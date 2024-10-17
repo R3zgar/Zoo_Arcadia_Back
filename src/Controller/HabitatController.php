@@ -10,26 +10,24 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
 
 #[Route('api/habitat', name: 'app_api_habitat')]
 class HabitatController extends AbstractController
 {
-    public function __construct(private EntityManagerInterface $manager, private HabitatRepository $repository)
-    {
+    public function __construct(
+        private EntityManagerInterface $manager,
+        private HabitatRepository $repository,
+        private SerializerInterface $serializer // Serializer ajouté
+    ) {
     }
 
     // Créer un nouvel habitat
     #[Route(name: 'new', methods: 'POST')]
     public function new(Request $request): Response
     {
-        // Décoder les données JSON envoyées dans la requête
-        $data = json_decode($request->getContent(), true);
-
-        // Créer un nouvel objet Habitat
-        $habitat = new Habitat();
-        $habitat->setNomHabitat($data['nom_habitat'] ?? 'Désert');
-        $habitat->setDescriptionHabitat($data['description_habitat'] ?? 'Région désertique avec peu de végétation');
-        $habitat->setImage($data['image'] ?? 'desert.png');
+        // Désérialiser les données JSON envoyées dans la requête
+        $habitat = $this->serializer->deserialize($request->getContent(), Habitat::class, 'json');
 
         // Persister l'habitat dans la base de données
         $this->manager->persist($habitat);
@@ -72,13 +70,13 @@ class HabitatController extends AbstractController
             return $this->json(['message' => "Habitat non trouvé pour l'ID {$id}"], Response::HTTP_NOT_FOUND);
         }
 
-        // Décoder les données JSON envoyées dans la requête
-        $data = json_decode($request->getContent(), true);
+        // Désérialiser les données JSON envoyées dans la requête
+        $data = $this->serializer->deserialize($request->getContent(), Habitat::class, 'json');
 
         // Mettre à jour les informations de l'habitat
-        $habitat->setNomHabitat($data['nom_habitat'] ?? $habitat->getNomHabitat());
-        $habitat->setDescriptionHabitat($data['description_habitat'] ?? $habitat->getDescriptionHabitat());
-        $habitat->setImage($data['image'] ?? $habitat->getImage());
+        $habitat->setNomHabitat($data->getNomHabitat() ?? $habitat->getNomHabitat());
+        $habitat->setDescriptionHabitat($data->getDescriptionHabitat() ?? $habitat->getDescriptionHabitat());
+        $habitat->setImage($data->getImage() ?? $habitat->getImage());
 
         // Sauvegarder les modifications dans la base de données
         $entityManager->flush();
@@ -110,13 +108,13 @@ class HabitatController extends AbstractController
         );
     }
 
-// Liste tous les habitats
+    // Liste tous les habitats
     #[Route('', name: 'index', methods: 'GET')]
     public function index(HabitatRepository $habitatRepository): JsonResponse
     {
         $habitats = $habitatRepository->findAll();
 
-        // Seul les informations basiques du habitat sont retournées pour éviter la référence circulaire
+        // Seules les informations basiques de l'habitat sont retournées pour éviter la référence circulaire
         $habitatsArray = [];
         foreach ($habitats as $habitat) {
             $habitatsArray[] = [
@@ -129,6 +127,4 @@ class HabitatController extends AbstractController
 
         return $this->json(['data' => $habitatsArray]);
     }
-
-
 }
