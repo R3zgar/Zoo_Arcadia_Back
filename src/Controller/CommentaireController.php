@@ -11,12 +11,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
 
 #[Route('api/commentaire', name: 'app_api_commentaire')]
 class CommentaireController extends AbstractController
 {
-    public function __construct(private EntityManagerInterface $manager, private CommentaireRepository $repository)
-    {
+    public function __construct(
+        private EntityManagerInterface $manager,
+        private CommentaireRepository $repository,
+        private SerializerInterface $serializer // Serializer ajouté
+    ) {
     }
 
     // Créer un nouveau commentaire
@@ -34,12 +38,18 @@ class CommentaireController extends AbstractController
             return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
         }
 
-        // Créer un nouvel objet Commentaire
-        $commentaire = new Commentaire();
-        $commentaire->setAuteur($data['auteur'] ?? 'Anonyme');
-        $commentaire->setContenu($data['contenu'] ?? 'Aucun contenu');
-        $commentaire->setDateCreation(new \DateTime($data['date'] ?? 'now')); // setDateCreation kullanıldı
-        $commentaire->setAnimal($animal); // Associer l'animal ici
+        // Créer un nouvel objet Commentaire à partir des données JSON
+        $commentaire = $this->serializer->deserialize($request->getContent(), Commentaire::class, 'json');
+
+        // Assurer que la date de création est définie
+        if (empty($data['date'])) {
+            $commentaire->setDateCreation(new \DateTime()); // Si aucune date n'est fournie, utiliser la date actuelle
+        } else {
+            $commentaire->setDateCreation(new \DateTime($data['date']));
+        }
+
+        // Associer l'animal au commentaire
+        $commentaire->setAnimal($animal);
 
         // Persister le commentaire dans la base de données
         $this->manager->persist($commentaire);
@@ -93,7 +103,7 @@ class CommentaireController extends AbstractController
         // Mettre à jour les informations du commentaire
         $commentaire->setAuteur($data['auteur'] ?? $commentaire->getAuteur());
         $commentaire->setContenu($data['contenu'] ?? $commentaire->getContenu());
-        $commentaire->setDateCreation(new \DateTime($data['date'] ?? $commentaire->getDateCreation()->format('Y-m-d'))); // setDateCreation kullanıldı
+        $commentaire->setDateCreation(new \DateTime($data['date'] ?? $commentaire->getDateCreation()->format('Y-m-d'))); // setDateCreation utilisé
 
         // Sauvegarder les modifications dans la base de données
         $entityManager->flush();
@@ -109,7 +119,7 @@ class CommentaireController extends AbstractController
         // Recherche du commentaire dans la base de données par son identifiant
         $commentaire = $this->repository->find($id);
 
-        // Si le commentaire n'est pas trouvé, retournez un message d'erreur avec le code 404
+        // Si le commentaire n'est pas trouvé, retourner un message d'erreur avec le code 404
         if (!$commentaire) {
             return $this->json(['message' => 'Commentaire non trouvé.'], Response::HTTP_NOT_FOUND);
         }
