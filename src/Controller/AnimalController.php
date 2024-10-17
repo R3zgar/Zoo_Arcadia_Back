@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Controller;
 
 use App\Entity\Animal;
@@ -12,39 +11,40 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-
-
+use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
 
 #[Route('api/animal', name: 'app_api_animal')]
-
 class AnimalController extends AbstractController
 {
-    public function __construct(private EntityManagerInterface $manager, private AnimalRepository $repository)
+    public function __construct(private EntityManagerInterface $manager, private AnimalRepository $repository, private SerializerInterface $serializer) // Serializer ajouté
     {
     }
 
-    // Create
+    // Créer
     #[Route(name: 'new', methods: 'POST')]
     public function new(Request $request, HabitatRepository $habitatRepository): Response
     {
         // Décoder les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
-        // Rechercher le habitat par ID (assuré que l'habitat_id est envoyé dans les données)
+        // Vérifier si le habitat_id existe dans les données
+        if (!isset($data['habitat_id'])) {
+            return $this->json(['message' => 'ID de l\'habitat manquant ou invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Rechercher le habitat par ID
         $habitat = $habitatRepository->find($data['habitat_id']);
 
-        // Si le habitat n'existe pas, retourner une erreur
+        // Vérifier si le habitat existe
         if (!$habitat) {
             return $this->json(['message' => 'Habitat non trouvé.'], Response::HTTP_NOT_FOUND);
         }
 
-        // Créer un nouvel objet Animal
-        $animal = new Animal();
-        $animal->setPrenomAnimal($data['prenom_animal'] ?? 'Tigre');
-        $animal->setRaceAnimal($data['race_animal'] ?? 'Tigeria');
-        $animal->setEtatAnimal($data['etat_animal'] ?? 'Sain');
-        $animal->setImage($data['image'] ?? 'tiger.jpg');
-        $animal->setHabitat($habitat); // Associer l'habitat ici
+        // Créer un nouvel objet Animal à partir des données JSON
+        $animal = $this->serializer->deserialize($request->getContent(), Animal::class, 'json');
+
+        // Associer l'habitat
+        $animal->setHabitat($habitat);
 
         // Persister l'animal dans la base de données
         $this->manager->persist($animal);
@@ -57,8 +57,7 @@ class AnimalController extends AbstractController
         );
     }
 
-
-// Lire (afficher un animal spécifique)
+    // Lire (Afficher un animal spécifique)
     #[Route('/{id}', name: 'show', methods: 'GET')]
     public function show(int $id, AnimalRepository $animalRepository): Response
     {
@@ -75,7 +74,6 @@ class AnimalController extends AbstractController
             ['message' => "Un Animal trouvé : {$animal->getPrenomAnimal()} pour l'ID {$animal->getId()}"]
         );
     }
-
 
     // Mettre à jour un animal existant
     #[Route('/{id}', name: 'update', methods: 'PUT')]
@@ -110,16 +108,14 @@ class AnimalController extends AbstractController
         return $this->json(['message' => "Animal mis à jour avec succès !"], Response::HTTP_OK);
     }
 
-
-
-// Suppression d'un animal
+    // Suppression d'un animal
     #[Route('/{id}', name: 'delete', methods: 'DELETE')]
     public function delete(int $id): Response
     {
         // Recherche de l'animal dans la base de données par son identifiant
         $animal = $this->repository->find($id);
 
-        // Si l'animal n'est pas trouvé, retournez un message d'erreur avec le code 404
+        // Si l'animal n'est pas trouvé, retourner un message d'erreur avec le code 404
         if (!$animal) {
             return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
         }
@@ -131,7 +127,7 @@ class AnimalController extends AbstractController
         // Retourner un message de confirmation avec le code 200 (succès)
         return $this->json(
             ['message' => 'Animal supprimé avec succès.'],
-            Response::HTTP_OK // Statut 200 OK
+            Response::HTTP_OK
         );
     }
 
@@ -155,8 +151,4 @@ class AnimalController extends AbstractController
 
         return $this->json(['data' => $animauxArray]);
     }
-
-
-
 }
-
