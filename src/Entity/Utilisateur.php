@@ -4,29 +4,27 @@ namespace App\Entity;
 
 use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
-class Utilisateur
+class Utilisateur implements UserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private $id;
 
-    #[ORM\Column(length: 180)]
-    private ?string $email = null;
+    #[ORM\Column(type: 'string', length: 180, unique: true)]
+    private $email;
 
-    #[ORM\Column(length: 255)]
-    private ?string $mot_de_passe = null;
+    #[ORM\Column(type: 'json')]
+    private $roles = [];
 
-    #[ORM\Column]
-    private array $roles = [];
+    #[ORM\Column(type: 'string')]
+    private $password;
 
-    #[ORM\Column(length: 180)]
-    private ?string $nom = null;
-
-    #[ORM\Column(length: 180)]
-    private ?string $prenom = null;
+    #[ORM\Column(type: 'string', length: 100)]
+    private $nom;
 
     public function getId(): ?int
     {
@@ -38,34 +36,33 @@ class Utilisateur
         return $this->email;
     }
 
-    public function setEmail(string $email): static
+    public function setEmail(string $email): self
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    public function getMotDePasse(): ?string
-    {
-        return $this->mot_de_passe;
-    }
-
-    public function setMotDePasse(string $mot_de_passe): static
-    {
-        $this->mot_de_passe = $mot_de_passe;
-
         return $this;
     }
 
     public function getRoles(): array
     {
-        return $this->roles;
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+        return array_unique($roles);
     }
 
-    public function setRoles(array $roles): static
+    public function setRoles(array $roles): self
     {
         $this->roles = $roles;
+        return $this;
+    }
 
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
         return $this;
     }
 
@@ -74,22 +71,25 @@ class Utilisateur
         return $this->nom;
     }
 
-    public function setNom(string $nom): static
+    public function setNom(string $nom): self
     {
         $this->nom = $nom;
-
         return $this;
     }
 
-    public function getPrenom(): ?string
+    // Symfony 5.3 ve sonrasında `getUsername()` yerine `getUserIdentifier()` kullanılmalı
+    public function getUserIdentifier(): string
     {
-        return $this->prenom;
+        return $this->email;
     }
 
-    public function setPrenom(string $prenom): static
+    public function eraseCredentials()
     {
-        $this->prenom = $prenom;
+        // Eğer geçici, hassas veri depolanıyorsa, burada temizleyin
+    }
 
-        return $this;
+    public function getSalt(): ?string
+    {
+        return null; // bcrypt ve sodium salt gerektirmez
     }
 }
