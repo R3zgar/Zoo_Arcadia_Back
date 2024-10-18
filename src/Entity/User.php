@@ -44,7 +44,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /** @throws \Exception */
     public function __construct()
     {
-        $this->apitoken = bin2hex(random_bytes(20));
+        $this->apiToken = bin2hex(random_bytes(20));
     }
 
 
