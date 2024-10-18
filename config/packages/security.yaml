@@ -16,7 +16,11 @@ security:
             security: false
         main:
             lazy: true
+            stateless: true
             provider: app_user_provider
+            custom_authenticator: App\Security\ApiTokenAuthenticator
+            json_login:
+                check_path: /api/login
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#firewalls-authentication
@@ -27,5 +31,16 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-    # - { path: ^/admin, roles: ROLE_ADMIN }
-    # - { path: ^/profile, roles: ROLE_USER }
+        # Zones pour Administrateur, Employé, et Vétérinaire
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
+        - { path: ^/api/employee, roles: ROLE_EMPLOYE }
+        - { path: ^/api/veterinaire, roles: ROLE_VETERINAIRE }
+
+        # Registration et Login accessibles au public
+        - { path: ^/api/registration, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
