@@ -15,6 +15,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('api/utilisateur', name: 'app_api_utilisateur')]
 class UtilisateurController extends AbstractController
 {
+    // Constructeur avec injection de dépendances (EntityManager, Repository, et Serializer)
     public function __construct(
         private EntityManagerInterface $manager,
         private UtilisateurRepository $repository,
@@ -32,6 +33,7 @@ class UtilisateurController extends AbstractController
         // Vérifier si un utilisateur avec le même email existe déjà
         $existingUser = $this->repository->findOneBy(['email' => $data['email']]);
         if ($existingUser) {
+            // Si l'email est déjà utilisé, retourner un message d'erreur avec code 409 (Conflit)
             return $this->json(['message' => 'Cet email est déjà utilisé.'], Response::HTTP_CONFLICT);
         }
 
@@ -40,18 +42,19 @@ class UtilisateurController extends AbstractController
 
         // Vérifier si le mot de passe est présent dans les données
         if (empty($data['mot_de_passe'])) {
+            // Si le mot de passe est manquant, retourner un message d'erreur avec code 400 (Mauvaise requête)
             return $this->json(['message' => 'Le mot de passe est obligatoire.'], Response::HTTP_BAD_REQUEST);
         }
 
         // Définir les valeurs de l'utilisateur
         $utilisateur->setNom($data['nom'] ?? 'Inconnu');
         $utilisateur->setEmail($data['email'] ?? 'email@example.com');
-        $utilisateur->setPassword(password_hash($data['mot_de_passe'], PASSWORD_BCRYPT)); // Hash du mot de passe
+        $utilisateur->setPassword(password_hash($data['mot_de_passe'], PASSWORD_BCRYPT)); // Hachage du mot de passe
 
         // Vérifier le rôle et l'attribuer correctement
         $role = $data['roles'][0] ?? 'ROLE_EMPLOYE';
         if (!in_array($role, ['ROLE_ADMIN', 'ROLE_EMPLOYE', 'ROLE_VETERINAIRE'])) {
-            $role = 'ROLE_EMPLOYE';
+            $role = 'ROLE_EMPLOYE'; // Si le rôle est invalide, attribuer le rôle d'employé par défaut
         }
         $utilisateur->setRoles([$role]);
 
@@ -59,7 +62,7 @@ class UtilisateurController extends AbstractController
         $this->manager->persist($utilisateur);
         $this->manager->flush();
 
-        // Retourner un message de succès
+        // Retourner un message de succès avec le code 201 (Créé)
         return $this->json(
             ['message' => "Nouvel utilisateur créé avec succès avec l'id {$utilisateur->getId()}"],
             Response::HTTP_CREATED,
@@ -114,7 +117,7 @@ class UtilisateurController extends AbstractController
         // Sauvegarder les modifications dans la base de données
         $entityManager->flush();
 
-        // Retourner un message de succès
+        // Retourner un message de succès avec le code 200 (OK)
         return $this->json(['message' => "Utilisateur mis à jour avec succès !"], Response::HTTP_OK);
     }
 
@@ -145,9 +148,10 @@ class UtilisateurController extends AbstractController
     #[Route('', name: 'index', methods: 'GET')]
     public function index(UtilisateurRepository $utilisateurRepository): JsonResponse
     {
+        // Récupérer tous les utilisateurs de la base de données
         $utilisateurs = $utilisateurRepository->findAll();
 
-        // Seules les informations basiques de l'utilisateur sont retournées pour éviter la référence circulaire
+        // Construire un tableau d'utilisateurs pour éviter les références circulaires
         $utilisateursArray = [];
         foreach ($utilisateurs as $utilisateur) {
             $utilisateursArray[] = [
@@ -158,6 +162,7 @@ class UtilisateurController extends AbstractController
             ];
         }
 
+        // Retourner la liste des utilisateurs sous forme de JSON
         return $this->json(['data' => $utilisateursArray]);
     }
 }
