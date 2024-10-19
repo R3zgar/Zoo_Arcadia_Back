@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Commentaire;
 use App\Repository\AnimalRepository;
 use App\Repository\CommentaireRepository;
+use OpenApi\Attributes as OA;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +25,37 @@ class CommentaireController extends AbstractController
 
     // POST - Ajouter un nouveau commentaire
     #[Route(methods: 'POST')]
+
+    #[OA\Post(
+        path: '/api/commentaire',
+        summary: "Ajouter un nouveau commentaire",
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Données du commentaire à ajouter",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'auteur', type: 'string', example: 'John Doe'),
+                    new OA\Property(property: 'contenu', type: 'string', example: 'Très bel endroit !'),
+                    new OA\Property(property: 'animal_id', type: 'integer', example: 1)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Commentaire créé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Nouveau commentaire créé avec succès!'),
+                        new OA\Property(property: 'id', type: 'integer', example: 1)
+                    ]
+                )
+            )
+        ]
+    )]
+
     public function new(Request $request, AnimalRepository $animalRepository): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -62,6 +94,34 @@ class CommentaireController extends AbstractController
 
     // GET - Afficher les détails d'un commentaire spécifique
     #[Route('/{id}', name: 'show', methods: 'GET')]
+
+    #[OA\Get(
+        path: '/api/commentaire/{id}',
+        summary: "Afficher un commentaire par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID du commentaire", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Commentaire trouvé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'auteur', type: 'string', example: 'John Doe'),
+                        new OA\Property(property: 'contenu', type: 'string', example: 'Très bel endroit !'),
+                        new OA\Property(property: 'animal', type: 'object', properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'prenom_animal', type: 'string', example: 'Simba')
+                        ])
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Commentaire non trouvé")
+        ]
+    )]
+
     public function show(int $id): JsonResponse
     {
         $commentaire = $this->repository->findOneBy(['id' => $id]);
@@ -90,6 +150,19 @@ class CommentaireController extends AbstractController
 
     // DELETE - Supprimer un commentaire
     #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+
+    #[OA\Delete(
+        path: '/api/commentaire/{id}',
+        summary: "Supprimer un commentaire par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID du commentaire", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 204, description: "Commentaire supprimé avec succès"),
+            new OA\Response(response: 404, description: "Commentaire non trouvé")
+        ]
+    )]
+
     public function delete(int $id): JsonResponse
     {
         $commentaire = $this->repository->findOneBy(['id' => $id]);
@@ -106,6 +179,34 @@ class CommentaireController extends AbstractController
 
     // GET - Liste tous les commentaires
     #[Route(name: 'list', methods: 'GET')]
+
+    #[OA\Get(
+        path: '/api/commentaire',
+        summary: "Liste tous les commentaires",
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Liste des commentaires récupérée avec succès",
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        type: 'object',
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'auteur', type: 'string', example: 'John Doe'),
+                            new OA\Property(property: 'contenu', type: 'string', example: 'Très bel endroit !'),
+                            new OA\Property(property: 'created_at', type: 'string', example: '2024-10-19 12:34:56'),
+                            new OA\Property(property: 'animal', type: 'object', properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'prenom_animal', type: 'string', example: 'Simba')
+                            ])
+                        ]
+                    )
+                )
+            )
+        ]
+    )]
+
     public function list(): JsonResponse
     {
         $commentaires = $this->repository->findAll();

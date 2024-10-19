@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\VeterinaireRapport;
 use App\Repository\VeterinaireRapportRepository;
 use App\Repository\AnimalRepository;
+use OpenApi\Attributes as OA;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +28,39 @@ class VeterinaireRapportController extends AbstractController
 
     // POST - Ajouter un nouveau rapport vétérinaire
     #[Route(methods: 'POST')]
+
+    #[OA\Post(
+        path: '/api/veterinaire_rapport',
+        summary: "Ajouter un nouveau rapport vétérinaire",
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Données du rapport vétérinaire à ajouter",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
+                    new OA\Property(property: 'nourriture', type: 'string', example: 'Viande'),
+                    new OA\Property(property: 'grammage', type: 'integer', example: 500),
+                    new OA\Property(property: 'date_passage', type: 'string', example: '2024-10-15'),
+                    new OA\Property(property: 'animal_id', type: 'integer', example: 1)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Rapport vétérinaire créé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Nouveau rapport vétérinaire créé avec succès!'),
+                        new OA\Property(property: 'location', type: 'string', example: 'https://127.0.0.1:8000/api/veterinaire_rapport/1')
+                    ]
+                )
+            )
+        ]
+    )]
+
     public function new(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -68,6 +102,34 @@ class VeterinaireRapportController extends AbstractController
 
     // GET - Afficher les détails d'un rapport vétérinaire
     #[Route('/{id}', name: 'show', methods: 'GET')]
+
+    #[OA\Get(
+        path: '/api/veterinaire_rapport/{id}',
+        summary: "Afficher un rapport vétérinaire par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID du rapport vétérinaire", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Rapport vétérinaire trouvé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
+                        new OA\Property(property: 'nourriture', type: 'string', example: 'Viande'),
+                        new OA\Property(property: 'grammage', type: 'integer', example: 500),
+                        new OA\Property(property: 'date_passage', type: 'string', example: '2024-10-15'),
+                        new OA\Property(property: 'createdAt', type: 'string', example: '2024-10-19 12:34:56'),
+                        new OA\Property(property: 'updatedAt', type: 'string', example: '2024-10-20 12:34:56')
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Rapport vétérinaire non trouvé")
+        ]
+    )]
+
     public function show(int $id): JsonResponse
     {
         $rapport = $this->repository->findOneBy(['id' => $id]);
@@ -97,6 +159,32 @@ class VeterinaireRapportController extends AbstractController
 
     // PUT - Mettre à jour un rapport vétérinaire existant
     #[Route('/{id}', name: 'edit', methods: 'PUT')]
+
+    #[OA\Put(
+        path: '/api/veterinaire_rapport/{id}',
+        summary: "Mettre à jour un rapport vétérinaire par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID du rapport vétérinaire", schema: new OA\Schema(type: 'integer'))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Nouvelles données du rapport vétérinaire à mettre à jour",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'etat_animal', type: 'string', example: 'En meilleure santé'),
+                    new OA\Property(property: 'nourriture', type: 'string', example: 'Viande de poulet'),
+                    new OA\Property(property: 'grammage', type: 'integer', example: 600),
+                    new OA\Property(property: 'date_passage', type: 'string', example: '2024-10-16')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Rapport vétérinaire mis à jour avec succès"),
+            new OA\Response(response: 404, description: "Rapport vétérinaire non trouvé")
+        ]
+    )]
+
     public function edit(int $id, Request $request): JsonResponse
     {
         $rapport = $this->repository->findOneBy(['id' => $id]);
@@ -131,6 +219,19 @@ class VeterinaireRapportController extends AbstractController
 
     // DELETE - Supprimer un rapport vétérinaire
     #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+
+    #[OA\Delete(
+        path: '/api/veterinaire_rapport/{id}',
+        summary: "Supprimer un rapport vétérinaire par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID du rapport vétérinaire", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 204, description: "Rapport vétérinaire supprimé avec succès"),
+            new OA\Response(response: 404, description: "Rapport vétérinaire non trouvé")
+        ]
+    )]
+
     public function delete(int $id): JsonResponse
     {
         $rapport = $this->repository->findOneBy(['id' => $id]);
@@ -148,6 +249,33 @@ class VeterinaireRapportController extends AbstractController
 
     // GET - Liste tous les rapports vétérinaires
     #[Route(name: 'list', methods: 'GET')]
+
+    #[OA\Get(
+        path: '/api/veterinaire_rapport',
+        summary: "Liste tous les rapports vétérinaires",
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Liste des rapports vétérinaires récupérée avec succès",
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        type: 'object',
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
+                            new OA\Property(property: 'nourriture', type: 'string', example: 'Viande'),
+                            new OA\Property(property: 'grammage', type: 'integer', example: 500),
+                            new OA\Property(property: 'date_passage', type: 'string', example: '2024-10-15'),
+                            new OA\Property(property: 'createdAt', type: 'string', example: '2024-10-19 12:34:56'),
+                            new OA\Property(property: 'updatedAt', type: 'string', example: '2024-10-20 12:34:56')
+                        ]
+                    )
+                )
+            )
+        ]
+    )]
+
     public function list(): JsonResponse
     {
         $rapports = $this->repository->findAll();

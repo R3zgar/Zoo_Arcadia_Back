@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Animal;
 use App\Repository\AnimalRepository;
 use App\Repository\HabitatRepository;
+use OpenApi\Attributes as OA;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,7 +26,40 @@ class AnimalController extends AbstractController
     }
 
     // POST - Ajouter un nouvel animal
-    #[Route(methods: 'POST')]
+    #[Route(methods: ['POST'])]
+
+    #[OA\Post(
+        path: '/api/animal',
+        summary: "Ajouter un nouvel animal",
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Données de l'animal à ajouter",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'prenom_animal', type: 'string', example: 'Simba'),
+                    new OA\Property(property: 'race_animal', type: 'string', example: 'Lion'),
+                    new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
+                    new OA\Property(property: 'image', type: 'string', example: 'simba.jpg'),
+                    new OA\Property(property: 'habitat_id', type: 'integer', example: 1)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Animal créé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Nouvel animal créé avec succès!'),
+                        new OA\Property(property: 'location', type: 'string', example: 'https://127.0.0.1:8000/api/animal/1')
+                    ]
+                )
+            )
+        ]
+    )]
+
     public function new(Request $request, HabitatRepository $habitatRepository): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -76,7 +110,37 @@ class AnimalController extends AbstractController
     }
 
     // GET - Afficher les détails d'un animal
-    #[Route('/{id}', name: 'show', methods: 'GET')]
+    #[Route('/{id}', name: 'show', methods: ['GET'])]
+
+    #[OA\Get(
+        path: '/api/animal/{id}',
+        summary: "Afficher un animal par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID de l'animal", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Animal trouvé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'prenom_animal', type: 'string', example: 'Simba'),
+                        new OA\Property(property: 'race_animal', type: 'string', example: 'Lion'),
+                        new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
+                        new OA\Property(property: 'image', type: 'string', example: 'simba.jpg'),
+                        new OA\Property(property: 'habitat', type: 'object', properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane')
+                        ])
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Animal non trouvé")
+        ]
+    )]
+
     public function show(int $id): JsonResponse
     {
         $animal = $this->repository->findOneBy(['id' => $id]);
@@ -107,7 +171,34 @@ class AnimalController extends AbstractController
     }
 
     // PUT - Mettre à jour un animal existant
-    #[Route('/{id}', name: 'edit', methods: 'PUT')]
+    #[Route('/{id}', name: 'edit', methods: ['PUT'])]
+
+    #[OA\Put(
+        path: '/api/animal/{id}',
+        summary: "Mettre à jour un animal par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID de l'animal", schema: new OA\Schema(type: 'integer'))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Nouvelles données de l'animal à mettre à jour",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'prenom_animal', type: 'string', example: 'Nouveau prénom'),
+                    new OA\Property(property: 'race_animal', type: 'string', example: 'Nouvelle race'),
+                    new OA\Property(property: 'etat_animal', type: 'string', example: 'Nouvel état'),
+                    new OA\Property(property: 'image', type: 'string', example: 'nouvelle_image.jpg'),
+                    new OA\Property(property: 'habitat_id', type: 'integer', example: 1)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 204, description: "Animal mis à jour avec succès"),
+            new OA\Response(response: 404, description: "Animal non trouvé")
+        ]
+    )]
+
     public function edit(int $id, Request $request, HabitatRepository $habitatRepository): JsonResponse
     {
         $animal = $this->repository->findOneBy(['id' => $id]);
@@ -152,7 +243,20 @@ class AnimalController extends AbstractController
     }
 
     // DELETE - Supprimer un animal
-    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
+
+    #[OA\Delete(
+        path: '/api/animal/{id}',
+        summary: "Supprimer un animal par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID de l'animal", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 204, description: "Animal supprimé avec succès"),
+            new OA\Response(response: 404, description: "Animal non trouvé")
+        ]
+    )]
+
     public function delete(int $id): JsonResponse
     {
         $animal = $this->repository->findOneBy(['id' => $id]);
@@ -169,7 +273,36 @@ class AnimalController extends AbstractController
     }
 
     // GET - Liste tous les animaux
-    #[Route(name: 'list', methods: 'GET')]
+    #[Route(name: 'list', methods: ['GET'])]
+
+    #[OA\Get(
+        path: '/api/animal',
+        summary: "Liste tous les animaux",
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Liste des animaux récupérée avec succès",
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        type: 'object',
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'prenom_animal', type: 'string', example: 'Simba'),
+                            new OA\Property(property: 'race_animal', type: 'string', example: 'Lion'),
+                            new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
+                            new OA\Property(property: 'image', type: 'string', example: 'simba.jpg'),
+                            new OA\Property(property: 'habitat', type: 'object', properties: [
+                                new OA\Property(property: 'id', type: 'integer', example: 1),
+                                new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane')
+                            ])
+                        ]
+                    )
+                )
+            )
+        ]
+    )]
+
     public function list(): JsonResponse
     {
         $animals = $this->repository->findAll();

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Habitat;
 use App\Repository\HabitatRepository;
+use OpenApi\Attributes as OA;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,6 +26,37 @@ class HabitatController extends AbstractController
 
     // POST - Ajouter un nouvel habitat
     #[Route(methods: 'POST')]
+
+    #[OA\Post(
+        path: '/api/habitat',
+        summary: "Ajouter un nouvel habitat",
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Données de l'habitat à ajouter",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane'),
+                    new OA\Property(property: 'description_habitat', type: 'string', example: 'Vaste étendue de savane avec une faune diversifiée.'),
+                    new OA\Property(property: 'image', type: 'string', example: 'savane.jpg')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Habitat créé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Nouvel habitat créé avec succès!'),
+                        new OA\Property(property: 'location', type: 'string', example: 'https://127.0.0.1:8000/api/habitat/1')
+                    ]
+                )
+            )
+        ]
+    )]
+
     public function new(Request $request): JsonResponse
     {
         // Désérialiser les données JSON envoyées dans la requête
@@ -51,6 +83,33 @@ class HabitatController extends AbstractController
 
     // GET - Afficher les détails d'un habitat
     #[Route('/{id}', name: 'show', methods: 'GET')]
+
+    #[OA\Get(
+        path: '/api/habitat/{id}',
+        summary: "Afficher un habitat par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID de l'habitat", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Habitat trouvé avec succès",
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane'),
+                        new OA\Property(property: 'description_habitat', type: 'string', example: 'Vaste étendue de savane avec une faune diversifiée.'),
+                        new OA\Property(property: 'image', type: 'string', example: 'savane.jpg'),
+                        new OA\Property(property: 'createdAt', type: 'string', example: '2024-10-19 12:34:56'),
+                        new OA\Property(property: 'updatedAt', type: 'string', example: '2024-10-20 12:34:56')
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Habitat non trouvé")
+        ]
+    )]
+
     public function show(int $id): JsonResponse
     {
         $habitat = $this->repository->findOneBy(['id' => $id]);
@@ -79,6 +138,32 @@ class HabitatController extends AbstractController
 
     // PUT - Mettre à jour un habitat existant
     #[Route('/{id}', name: 'edit', methods: 'PUT')]
+
+
+    #[OA\Put(
+        path: '/api/habitat/{id}',
+        summary: "Mettre à jour un habitat par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID de l'habitat", schema: new OA\Schema(type: 'integer'))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: "Nouvelles données de l'habitat à mettre à jour",
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane'),
+                    new OA\Property(property: 'description_habitat', type: 'string', example: 'Nouvelle description'),
+                    new OA\Property(property: 'image', type: 'string', example: 'nouvelle_image.jpg')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Habitat mis à jour avec succès"),
+            new OA\Response(response: 404, description: "Habitat non trouvé")
+        ]
+    )]
+
     public function edit(int $id, Request $request): JsonResponse
     {
         $habitat = $this->repository->findOneBy(['id' => $id]);
@@ -103,6 +188,19 @@ class HabitatController extends AbstractController
 
     // DELETE - Supprimer un habitat
     #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+
+    #[OA\Delete(
+        path: '/api/habitat/{id}',
+        summary: "Supprimer un habitat par ID",
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: "ID de l'habitat", schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 204, description: "Habitat supprimé avec succès"),
+            new OA\Response(response: 404, description: "Habitat non trouvé")
+        ]
+    )]
+
     public function delete(int $id): JsonResponse
     {
         $habitat = $this->repository->findOneBy(['id' => $id]);
@@ -120,6 +218,32 @@ class HabitatController extends AbstractController
 
     // GET - Liste tous les habitats
     #[Route(name: 'list', methods: 'GET')]
+
+    #[OA\Get(
+        path: '/api/habitat',
+        summary: "Liste tous les habitats",
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Liste des habitats récupérée avec succès",
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        type: 'object',
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane'),
+                            new OA\Property(property: 'description_habitat', type: 'string', example: 'Vaste étendue de savane avec une faune diversifiée.'),
+                            new OA\Property(property: 'image', type: 'string', example: 'savane.jpg'),
+                            new OA\Property(property: 'createdAt', type: 'string', example: '2024-10-19 12:34:56'),
+                            new OA\Property(property: 'updatedAt', type: 'string', example: '2024-10-20 12:34:56')
+                        ]
+                    )
+                )
+            )
+        ]
+    )]
+
     public function list(): JsonResponse
     {
         $habitats = $this->repository->findAll();
