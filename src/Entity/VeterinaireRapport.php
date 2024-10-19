@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\VeterinaireRapportRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: VeterinaireRapportRepository::class)]
 class VeterinaireRapport
@@ -25,6 +26,12 @@ class VeterinaireRapport
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $date_passage = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?DateTimeImmutable $created_at = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $updated_at = null;
 
     #[ORM\ManyToOne(inversedBy: 'veterinaireRapports')]
     #[ORM\JoinColumn(nullable: false)]
@@ -78,6 +85,28 @@ class VeterinaireRapport
     public function setDatePassage(\DateTimeInterface $date_passage): static
     {
         $this->date_passage = $date_passage;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?DateTimeImmutable
+    {
+        return $this->created_at;
+    }
+
+    public function setCreatedAt(DateTimeImmutable $created_at): static
+    {
+        $this->created_at = $created_at;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?DateTimeImmutable
+    {
+        return $this->updated_at;
+    }
+
+    public function setUpdatedAt(?DateTimeImmutable $updated_at): static
+    {
+        $this->updated_at = $updated_at;
         return $this;
     }
 

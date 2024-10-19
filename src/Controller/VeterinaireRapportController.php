@@ -5,157 +5,170 @@ namespace App\Controller;
 use App\Entity\VeterinaireRapport;
 use App\Repository\VeterinaireRapportRepository;
 use App\Repository\AnimalRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request, Response};
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('api/veterinaire_rapport', name: 'app_api_veterinaire_rapport')]
+#[Route('/api/veterinaire_rapport', name: 'app_api_veterinaire_rapport_')]
 class VeterinaireRapportController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $manager,
         private VeterinaireRapportRepository $repository,
         private AnimalRepository $animalRepository,
-        private SerializerInterface $serializer // Serializer ajouté
+        private SerializerInterface $serializer,
+        private UrlGeneratorInterface $urlGenerator
     ) {
     }
 
-    // Créer un nouveau rapport
-    #[Route(name: 'new', methods: 'POST')]
-    public function new(Request $request): Response
+    // POST - Ajouter un nouveau rapport vétérinaire
+    #[Route(methods: 'POST')]
+    public function new(Request $request): JsonResponse
     {
-        // Désérialiser les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
-        // Vérifier si l'animal_id est envoyé
+        // Vérifier si l'animal_id existe dans les données
         if (!isset($data['animal_id'])) {
-            return $this->json(['message' => 'L\'animal_id est manquant.'], Response::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => 'ID de l\'animal manquant ou invalide.'], Response::HTTP_BAD_REQUEST);
         }
 
         // Rechercher l'animal par ID
         $animal = $this->animalRepository->find($data['animal_id']);
-
-        // Si l'animal n'existe pas, retourner une erreur
         if (!$animal) {
-            return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
         }
 
-        // Créer un nouvel objet rapport
+        // Créer un nouvel objet rapport vétérinaire à partir des données JSON
         $rapport = $this->serializer->deserialize($request->getContent(), VeterinaireRapport::class, 'json');
-
-        // Associer l'animal au rapport
         $rapport->setAnimal($animal);
+        $rapport->setCreatedAt(new DateTimeImmutable());
+        $rapport->setUpdatedAt(new DateTimeImmutable());
 
-        // Persister le rapport dans la base de données
+        // Enregistrement du rapport vétérinaire
         $this->manager->persist($rapport);
         $this->manager->flush();
 
-        // Retourner un message de succès
-        return $this->json(
-            ['message' => "Nouveau rapport vétérinaire créé avec succès avec l'id {$rapport->getId()}"],
-            Response::HTTP_CREATED,
+        // Générer l'URL de l'élément créé
+        $location = $this->urlGenerator->generate(
+            'app_api_veterinaire_rapport_show',
+            ['id' => $rapport->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL
         );
+
+        // Retourner un message de succès avec l'URL du rapport créé
+        return new JsonResponse([
+            'message' => 'Nouveau rapport vétérinaire créé avec succès!',
+            'location' => $location
+        ], Response::HTTP_CREATED);
     }
 
-    // Lire un rapport vétérinaire spécifique
+    // GET - Afficher les détails d'un rapport vétérinaire
     #[Route('/{id}', name: 'show', methods: 'GET')]
-    public function show(int $id, VeterinaireRapportRepository $veterinaireRapportRepository): Response
+    public function show(int $id): JsonResponse
     {
-        // Trouver le rapport dans la base de données par son ID
-        $rapport = $veterinaireRapportRepository->find($id);
+        $rapport = $this->repository->findOneBy(['id' => $id]);
 
-        // Si le rapport n'est pas trouvé, retourner une exception
-        if (!$rapport) {
-            throw new \Exception("Rapport non trouvé pour l'ID {$id}");
-        }
-
-        // Retourner les informations du rapport sous forme de JSON
-        return $this->json(
-            ['message' => "Un rapport trouvé : {$rapport->getEtatAnimal()} pour l'ID {$rapport->getId()}"]
-        );
-    }
-
-// Mettre à jour un rapport existant
-    #[Route('/{id}', name: 'update', methods: 'PUT')]
-    public function update(int $id, Request $request, VeterinaireRapportRepository $veterinaireRapportRepository, EntityManagerInterface $entityManager, SerializerInterface $serializer): Response
-    {
-        // Rechercher le rapport par ID dans la base de données
-        $rapport = $veterinaireRapportRepository->find($id);
-
-        // Si le rapport n'existe pas, renvoyer une erreur 404
-        if (!$rapport) {
-            return $this->json(['message' => "Rapport non trouvé pour l'ID {$id}"], Response::HTTP_NOT_FOUND);
-        }
-
-        // Désérialiser les données JSON envoyées dans la requête
-        $data = json_decode($request->getContent(), true);
-
-        // Mise à jour des informations du rapport à partir des données reçues
-        $rapport->setEtatAnimal($data['etat_animal'] ?? $rapport->getEtatAnimal());
-        $rapport->setNourriture($data['nourriture'] ?? $rapport->getNourriture());
-        $rapport->setGrammage($data['grammage'] ?? $rapport->getGrammage());
-
-        // Vérifier si la date_passage est présente et si c'est un string, sinon ne pas changer
-        if (isset($data['date_passage']) && is_string($data['date_passage'])) {
-            try {
-                $rapport->setDatePassage(new \DateTime($data['date_passage']));
-            } catch (\Exception $e) {
-                return $this->json(['message' => 'Format de date invalide.'], Response::HTTP_BAD_REQUEST);
-            }
-        }
-
-        // Sauvegarder les modifications dans la base de données
-        $entityManager->flush();
-
-        // Retourner un message de succès
-        return $this->json(['message' => "Rapport mis à jour avec succès !"], Response::HTTP_OK);
-    }
-
-    // Suppression d'un rapport
-    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
-    public function delete(int $id): Response
-    {
-        // Recherche du rapport dans la base de données par son identifiant
-        $rapport = $this->repository->find($id);
-
-        // Si le rapport n'est pas trouvé, retournez un message d'erreur avec le code 404
-        if (!$rapport) {
-            return $this->json(['message' => 'Rapport non trouvé.'], Response::HTTP_NOT_FOUND);
-        }
-
-        // Supprimer le rapport de la base de données
-        $this->manager->remove($rapport);
-        $this->manager->flush();
-
-        // Retourner un message de confirmation avec le code 200 (succès)
-        return $this->json(
-            ['message' => 'Rapport supprimé avec succès.'],
-            Response::HTTP_OK
-        );
-    }
-
-    // Liste tous les rapports vétérinaires
-    #[Route('', name: 'index', methods: 'GET')]
-    public function index(VeterinaireRapportRepository $veterinaireRapportRepository): JsonResponse
-    {
-        $rapports = $veterinaireRapportRepository->findAll();
-
-        // Seules les informations basiques du rapport sont retournées
-        $rapportsArray = [];
-        foreach ($rapports as $rapport) {
-            $rapportsArray[] = [
+        if ($rapport) {
+            // Créer la réponse manuellement pour éviter les références circulaires
+            $responseData = [
                 'id' => $rapport->getId(),
                 'etat_animal' => $rapport->getEtatAnimal(),
                 'nourriture' => $rapport->getNourriture(),
                 'grammage' => $rapport->getGrammage(),
                 'date_passage' => $rapport->getDatePassage()->format('Y-m-d'),
+                'createdAt' => $rapport->getCreatedAt(),
+                'updatedAt' => $rapport->getUpdatedAt()
+            ];
+
+            // Retourner un message de succès avec les données du rapport
+            return new JsonResponse([
+                'message' => 'Rapport vétérinaire trouvé avec succès.',
+                'data' => $responseData
+            ], Response::HTTP_OK);
+        }
+
+        // Retourner un message d'erreur si le rapport n'a pas été trouvé
+        return new JsonResponse(['message' => 'Rapport vétérinaire non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // PUT - Mettre à jour un rapport vétérinaire existant
+    #[Route('/{id}', name: 'edit', methods: 'PUT')]
+    public function edit(int $id, Request $request): JsonResponse
+    {
+        $rapport = $this->repository->findOneBy(['id' => $id]);
+        if ($rapport) {
+            $data = json_decode($request->getContent(), true);
+
+            // Mise à jour des autres données du rapport
+            $rapport->setEtatAnimal($data['etat_animal'] ?? $rapport->getEtatAnimal());
+            $rapport->setNourriture($data['nourriture'] ?? $rapport->getNourriture());
+            $rapport->setGrammage($data['grammage'] ?? $rapport->getGrammage());
+
+            // Mise à jour de la date_passage si elle est présente et valide
+            if (isset($data['date_passage']) && is_string($data['date_passage'])) {
+                try {
+                    $rapport->setDatePassage(new \DateTime($data['date_passage']));
+                } catch (\Exception $e) {
+                    return new JsonResponse(['message' => 'Format de date invalide.'], Response::HTTP_BAD_REQUEST);
+                }
+            }
+
+            // Mise à jour du champ updatedAt
+            $rapport->setUpdatedAt(new DateTimeImmutable());
+
+            $this->manager->flush();
+
+            // Retourner un message de succès
+            return new JsonResponse(['message' => 'Rapport vétérinaire mis à jour avec succès!'], Response::HTTP_OK);
+        }
+
+        return new JsonResponse(['message' => 'Rapport vétérinaire non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // DELETE - Supprimer un rapport vétérinaire
+    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+    public function delete(int $id): JsonResponse
+    {
+        $rapport = $this->repository->findOneBy(['id' => $id]);
+        if ($rapport) {
+            $this->manager->remove($rapport);
+            $this->manager->flush();
+
+            // Retourner un message de succès après suppression
+            return new JsonResponse(['message' => 'Rapport vétérinaire supprimé avec succès.'], Response::HTTP_OK);
+        }
+
+        // Retourner un message d'erreur si le rapport n'a pas été trouvé
+        return new JsonResponse(['message' => 'Rapport vétérinaire non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // GET - Liste tous les rapports vétérinaires
+    #[Route(name: 'list', methods: 'GET')]
+    public function list(): JsonResponse
+    {
+        $rapports = $this->repository->findAll();
+        $responseData = [];
+
+        foreach ($rapports as $rapport) {
+            $responseData[] = [
+                'id' => $rapport->getId(),
+                'etat_animal' => $rapport->getEtatAnimal(),
+                'nourriture' => $rapport->getNourriture(),
+                'grammage' => $rapport->getGrammage(),
+                'date_passage' => $rapport->getDatePassage()->format('Y-m-d'),
+                'createdAt' => $rapport->getCreatedAt(),
+                'updatedAt' => $rapport->getUpdatedAt()
             ];
         }
 
-        return $this->json(['data' => $rapportsArray]);
+        // Retourner un message de succès avec la liste des rapports vétérinaires
+        return new JsonResponse([
+            'message' => 'Liste des rapports vétérinaires récupérée avec succès.',
+            'data' => $responseData
+        ], Response::HTTP_OK);
     }
 }
