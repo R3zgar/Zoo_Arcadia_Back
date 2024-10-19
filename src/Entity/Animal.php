@@ -3,9 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\AnimalRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: AnimalRepository::class)]
 class Animal
@@ -27,26 +26,19 @@ class Animal
     #[ORM\Column(length: 255)]
     private ?string $image = null;
 
-    #[ORM\ManyToOne(inversedBy: 'animaux')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\Column]
+    private ?DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $updatedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: Habitat::class, inversedBy: 'animaux')]
+    #[ORM\JoinColumn(nullable: false, name: 'habitat_id', referencedColumnName: 'id')]
     private ?Habitat $habitat = null;
-
-    /**
-     * @var Collection<int, VeterinaireRapport>
-     */
-    #[ORM\OneToMany(targetEntity: VeterinaireRapport::class, mappedBy: 'animal')]
-    private Collection $veterinaireRapports;
-
-    /**
-     * @var Collection<int, Commentaire>
-     */
-    #[ORM\OneToMany(targetEntity: Commentaire::class, mappedBy: 'animal', orphanRemoval: true)]
-    private Collection $commentaires;
 
     public function __construct()
     {
-        $this->veterinaireRapports = new ArrayCollection();
-        $this->commentaires = new ArrayCollection();
+        $this->createdAt = new DateTimeImmutable(); // Otomatik oluşturulma zamanı
     }
 
     public function getId(): ?int
@@ -102,6 +94,30 @@ class Animal
         return $this;
     }
 
+    public function getCreatedAt(): ?DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
     public function getHabitat(): ?Habitat
     {
         return $this->habitat;
@@ -110,66 +126,6 @@ class Animal
     public function setHabitat(?Habitat $habitat): static
     {
         $this->habitat = $habitat;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, VeterinaireRapport>
-     */
-    public function getVeterinaireRapports(): Collection
-    {
-        return $this->veterinaireRapports;
-    }
-
-    public function addVeterinaireRapport(VeterinaireRapport $veterinaireRapport): static
-    {
-        if (!$this->veterinaireRapports->contains($veterinaireRapport)) {
-            $this->veterinaireRapports->add($veterinaireRapport);
-            $veterinaireRapport->setAnimal($this);
-        }
-
-        return $this;
-    }
-
-    public function removeVeterinaireRapport(VeterinaireRapport $veterinaireRapport): static
-    {
-        if ($this->veterinaireRapports->removeElement($veterinaireRapport)) {
-            // set the owning side to null (unless already changed)
-            if ($veterinaireRapport->getAnimal() === $this) {
-                $veterinaireRapport->setAnimal(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Commentaire>
-     */
-    public function getCommentaires(): Collection
-    {
-        return $this->commentaires;
-    }
-
-    public function addCommentaire(Commentaire $commentaire): static
-    {
-        if (!$this->commentaires->contains($commentaire)) {
-            $this->commentaires->add($commentaire);
-            $commentaire->setAnimal($this);
-        }
-
-        return $this;
-    }
-
-    public function removeCommentaire(Commentaire $commentaire): static
-    {
-        if ($this->commentaires->removeElement($commentaire)) {
-            // set the owning side to null (unless already changed)
-            if ($commentaire->getAnimal() === $this) {
-                $commentaire->setAnimal(null);
-            }
-        }
 
         return $this;
     }

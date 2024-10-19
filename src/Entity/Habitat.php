@@ -5,7 +5,6 @@ namespace App\Entity;
 use App\Repository\HabitatRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: HabitatRepository::class)]
@@ -19,21 +18,25 @@ class Habitat
     #[ORM\Column(length: 180)]
     private ?string $nom_habitat = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: 'text')]
     private ?string $description_habitat = null;
 
     #[ORM\Column(length: 255)]
     private ?string $image = null;
 
-    /**
-     * @var Collection<int, Animal>
-     */
-    #[ORM\OneToMany(targetEntity: Animal::class, mappedBy: 'habitat')]
+    #[ORM\Column]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\OneToMany(mappedBy: 'habitat', targetEntity: Animal::class)]
     private Collection $animaux;
 
     public function __construct()
     {
         $this->animaux = new ArrayCollection();
+        $this->createdAt = new \DateTimeImmutable(); // Otomatik oluşturulma zamanı
     }
 
     public function getId(): ?int
@@ -77,9 +80,30 @@ class Habitat
         return $this;
     }
 
-    /**
-     * @return Collection<int, Animal>
-     */
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
     public function getAnimaux(): Collection
     {
         return $this->animaux;
@@ -98,7 +122,6 @@ class Habitat
     public function removeAnimaux(Animal $animaux): static
     {
         if ($this->animaux->removeElement($animaux)) {
-            // set the owning side to null (unless already changed)
             if ($animaux->getHabitat() === $this) {
                 $animaux->setHabitat(null);
             }

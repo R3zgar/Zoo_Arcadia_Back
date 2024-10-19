@@ -5,150 +5,194 @@ namespace App\Controller;
 use App\Entity\Animal;
 use App\Repository\AnimalRepository;
 use App\Repository\HabitatRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request, Response};
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('api/animal', name: 'app_api_animal')]
+#[Route('/api/animal', name: 'app_api_animal_')]
 class AnimalController extends AbstractController
 {
-    public function __construct(private EntityManagerInterface $manager, private AnimalRepository $repository, private SerializerInterface $serializer) // Serializer ajouté
-    {
+    public function __construct(
+        private EntityManagerInterface $manager,
+        private AnimalRepository $repository,
+        private SerializerInterface $serializer,
+        private UrlGeneratorInterface $urlGenerator
+    ) {
     }
 
-    // Créer
-    #[Route(name: 'new', methods: 'POST')]
-    public function new(Request $request, HabitatRepository $habitatRepository): Response
+    // POST - Ajouter un nouvel animal
+    #[Route(methods: 'POST')]
+    public function new(Request $request, HabitatRepository $habitatRepository): JsonResponse
     {
-        // Décoder les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
         // Vérifier si le habitat_id existe dans les données
         if (!isset($data['habitat_id'])) {
-            return $this->json(['message' => 'ID de l\'habitat manquant ou invalide.'], Response::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => 'ID de l\'habitat manquant ou invalide.'], Response::HTTP_BAD_REQUEST);
         }
 
         // Rechercher le habitat par ID
         $habitat = $habitatRepository->find($data['habitat_id']);
-
-        // Vérifier si le habitat existe
         if (!$habitat) {
-            return $this->json(['message' => 'Habitat non trouvé.'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['message' => 'Habitat non trouvé.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Vérification pour s'assurer que le habitat_id correspond à l'habitat réel (validation pour habitat_id fixe)
+        $validHabitats = [
+            1 => 'Savane',
+            2 => 'Jungle',
+            3 => 'Marais'
+        ];
+
+        if (isset($validHabitats[$data['habitat_id']]) && $habitat->getNomHabitat() !== $validHabitats[$data['habitat_id']]) {
+            return new JsonResponse(['message' => 'ID de l\'habitat ne correspond pas à l\'habitat réel.'], Response::HTTP_BAD_REQUEST);
         }
 
         // Créer un nouvel objet Animal à partir des données JSON
         $animal = $this->serializer->deserialize($request->getContent(), Animal::class, 'json');
-
-        // Associer l'habitat
         $animal->setHabitat($habitat);
+        $animal->setCreatedAt(new DateTimeImmutable());
 
-        // Persister l'animal dans la base de données
+        // Enregistrement de l'animal
         $this->manager->persist($animal);
         $this->manager->flush();
 
-        // Retourner un message de succès
-        return $this->json(
-            ['message' => "Nouvel animal créé avec succès avec l'id {$animal->getId()}"],
-            Response::HTTP_CREATED,
+        // Générer l'URL de l'élément créé
+        $location = $this->urlGenerator->generate(
+            'app_api_animal_show',
+            ['id' => $animal->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL
         );
+
+        // Retourner un message de succès avec l'URL de l'animal créé
+        return new JsonResponse([
+            'message' => 'Nouvel animal créé avec succès!',
+            'location' => $location
+        ], Response::HTTP_CREATED);
     }
 
-    // Lire (Afficher un animal spécifique)
+    // GET - Afficher les détails d'un animal
     #[Route('/{id}', name: 'show', methods: 'GET')]
-    public function show(int $id, AnimalRepository $animalRepository): Response
+    public function show(int $id): JsonResponse
     {
-        // Trouver l'animal dans la base de données par son ID
-        $animal = $animalRepository->find($id);
+        $animal = $this->repository->findOneBy(['id' => $id]);
 
-        // Si l'animal n'est pas trouvé, retourner une exception
-        if (!$animal) {
-            throw new \Exception("Animal non trouvé pour l'ID {$id}");
-        }
-
-        // Retourner les informations de l'animal sous forme de JSON
-        return $this->json(
-            ['message' => "Un Animal trouvé : {$animal->getPrenomAnimal()} pour l'ID {$animal->getId()}"]
-        );
-    }
-
-    // Mettre à jour un animal existant
-    #[Route('/{id}', name: 'update', methods: 'PUT')]
-    public function update(int $id, Request $request, AnimalRepository $animalRepository, EntityManagerInterface $entityManager): Response
-    {
-        // Vérifier si l'ID est bien un entier valide
-        if (!is_int($id)) {
-            return $this->json(['message' => "L'ID doit être un entier valide."], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Rechercher l'animal par ID dans la base de données
-        $animal = $animalRepository->find($id);
-
-        // Si l'animal n'existe pas, renvoyer une erreur 404
-        if (!$animal) {
-            return $this->json(['message' => "Animal non trouvé pour l'ID {$id}"], Response::HTTP_NOT_FOUND);
-        }
-
-        // Décoder les données JSON envoyées dans la requête
-        $data = json_decode($request->getContent(), true);
-
-        // Mettre à jour les informations de l'animal
-        $animal->setPrenomAnimal($data['prenom_animal'] ?? $animal->getPrenomAnimal());
-        $animal->setRaceAnimal($data['race_animal'] ?? $animal->getRaceAnimal());
-        $animal->setEtatAnimal($data['etat_animal'] ?? $animal->getEtatAnimal());
-        $animal->setImage($data['image'] ?? $animal->getImage());
-
-        // Sauvegarder les modifications dans la base de données
-        $entityManager->flush();
-
-        // Retourner un message de succès
-        return $this->json(['message' => "Animal mis à jour avec succès !"], Response::HTTP_OK);
-    }
-
-    // Suppression d'un animal
-    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
-    public function delete(int $id): Response
-    {
-        // Recherche de l'animal dans la base de données par son identifiant
-        $animal = $this->repository->find($id);
-
-        // Si l'animal n'est pas trouvé, retourner un message d'erreur avec le code 404
-        if (!$animal) {
-            return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
-        }
-
-        // Supprimer l'animal de la base de données
-        $this->manager->remove($animal);
-        $this->manager->flush();
-
-        // Retourner un message de confirmation avec le code 200 (succès)
-        return $this->json(
-            ['message' => 'Animal supprimé avec succès.'],
-            Response::HTTP_OK
-        );
-    }
-
-    // Liste tous les animaux
-    #[Route('', name: 'index', methods: 'GET')]
-    public function index(AnimalRepository $animalRepository): JsonResponse
-    {
-        $animaux = $animalRepository->findAll();
-
-        // Seul les informations basiques de l'animal sont retournées pour éviter la référence circulaire
-        $animauxArray = [];
-        foreach ($animaux as $animal) {
-            $animauxArray[] = [
+        if ($animal) {
+            // Créer la réponse manuellement pour éviter les références circulaires
+            $responseData = [
                 'id' => $animal->getId(),
                 'prenom_animal' => $animal->getPrenomAnimal(),
                 'race_animal' => $animal->getRaceAnimal(),
                 'etat_animal' => $animal->getEtatAnimal(),
                 'image' => $animal->getImage(),
+                'habitat' => [
+                    'id' => $animal->getHabitat()->getId(),
+                    'nom_habitat' => $animal->getHabitat()->getNomHabitat()
+                ]
+            ];
+
+            // Retourner un message de succès avec les données de l'animal
+            return new JsonResponse([
+                'message' => 'Animal trouvé avec succès.',
+                'data' => $responseData
+            ], Response::HTTP_OK);
+        }
+
+        // Retourner un message d'erreur si l'animal n'a pas été trouvé
+        return new JsonResponse(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // PUT - Mettre à jour un animal existant
+    #[Route('/{id}', name: 'edit', methods: 'PUT')]
+    public function edit(int $id, Request $request, HabitatRepository $habitatRepository): JsonResponse
+    {
+        $animal = $this->repository->findOneBy(['id' => $id]);
+        if ($animal) {
+            $data = json_decode($request->getContent(), true);
+
+            // Vérifier si le habitat_id existe dans les données pour la mise à jour
+            if (isset($data['habitat_id'])) {
+                $habitat = $habitatRepository->find($data['habitat_id']);
+                if (!$habitat) {
+                    return new JsonResponse(['message' => 'Habitat non trouvé.'], Response::HTTP_NOT_FOUND);
+                }
+
+                // Validation du habitat_id
+                $validHabitats = [
+                    1 => 'Savane',
+                    2 => 'Jungle',
+                    3 => 'Marais'
+                ];
+
+                if (isset($validHabitats[$data['habitat_id']]) && $habitat->getNomHabitat() !== $validHabitats[$data['habitat_id']]) {
+                    return new JsonResponse(['message' => 'ID de l\'habitat ne correspond pas à l\'habitat réel.'], Response::HTTP_BAD_REQUEST);
+                }
+
+                $animal->setHabitat($habitat);
+            }
+
+            // Mise à jour des autres données de l'animal
+            $animal->setPrenomAnimal($data['prenom_animal']);
+            $animal->setRaceAnimal($data['race_animal']);
+            $animal->setEtatAnimal($data['etat_animal']);
+            $animal->setImage($data['image']);
+            $animal->setUpdatedAt(new DateTimeImmutable());
+
+            $this->manager->flush();
+
+            // Retourner un message de succès
+            return new JsonResponse(['message' => 'Animal mis à jour avec succès!'], Response::HTTP_OK);
+        }
+
+        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+    }
+
+    // DELETE - Supprimer un animal
+    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+    public function delete(int $id): JsonResponse
+    {
+        $animal = $this->repository->findOneBy(['id' => $id]);
+        if ($animal) {
+            $this->manager->remove($animal);
+            $this->manager->flush();
+
+            // Retourner un message de succès après suppression
+            return new JsonResponse(['message' => 'Animal supprimé avec succès.'], Response::HTTP_OK);
+        }
+
+        // Retourner un message d'erreur si l'animal n'a pas été trouvé
+        return new JsonResponse(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // GET - Liste tous les animaux
+    #[Route(name: 'list', methods: 'GET')]
+    public function list(): JsonResponse
+    {
+        $animals = $this->repository->findAll();
+        $responseData = [];
+
+        foreach ($animals as $animal) {
+            $responseData[] = [
+                'id' => $animal->getId(),
+                'prenom_animal' => $animal->getPrenomAnimal(),
+                'race_animal' => $animal->getRaceAnimal(),
+                'etat_animal' => $animal->getEtatAnimal(),
+                'image' => $animal->getImage(),
+                'habitat' => [
+                    'id' => $animal->getHabitat()->getId(),
+                    'nom_habitat' => $animal->getHabitat()->getNomHabitat()
+                ]
             ];
         }
 
-        return $this->json(['data' => $animauxArray]);
+        // Retourner un message de succès avec la liste des animaux
+        return new JsonResponse([
+            'message' => 'Liste des animaux récupérée avec succès.',
+            'data' => $responseData
+        ], Response::HTTP_OK);
     }
 }

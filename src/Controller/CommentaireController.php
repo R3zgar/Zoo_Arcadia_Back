@@ -5,153 +5,129 @@ namespace App\Controller;
 use App\Entity\Commentaire;
 use App\Repository\AnimalRepository;
 use App\Repository\CommentaireRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request, Response};
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface; // Serializer ajouté
+use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('api/commentaire', name: 'app_api_commentaire')]
+#[Route('/api/commentaire', name: 'app_api_commentaire_')]
 class CommentaireController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $manager,
         private CommentaireRepository $repository,
-        private SerializerInterface $serializer // Serializer ajouté
+        private SerializerInterface $serializer
     ) {
     }
 
-    // Créer un nouveau commentaire
-    #[Route(name: 'new', methods: 'POST')]
-    public function new(Request $request, AnimalRepository $animalRepository): Response
+    // POST - Ajouter un nouveau commentaire
+    #[Route(methods: 'POST')]
+    public function new(Request $request, AnimalRepository $animalRepository): JsonResponse
     {
-        // Décoder les données JSON envoyées dans la requête
         $data = json_decode($request->getContent(), true);
 
-        // Rechercher l'animal par ID (assuré que l'animal_id est envoyé dans les données)
-        $animal = $animalRepository->find($data['animal_id']);
+        // Vérifier si l'animal_id est présent dans les données
+        if (!isset($data['animal_id'])) {
+            return new JsonResponse(['message' => 'ID de l\'animal manquant ou invalide.'], Response::HTTP_BAD_REQUEST);
+        }
 
-        // Si l'animal n'existe pas, retourner une erreur
+        // Contrôle pour vérifier que l'animal_id est valide (seulement 1, 2 ou 3)
+        if (!in_array($data['animal_id'], [1, 2, 3])) {
+            return new JsonResponse(['message' => 'ID de l\'animal non valide. Seulement les animaux dans les habitats Savane (1), Jungle (2) et Marais (3) sont permis.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Rechercher l'animal par ID
+        $animal = $animalRepository->find($data['animal_id']);
         if (!$animal) {
-            return $this->json(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['message' => 'Animal non trouvé.'], Response::HTTP_NOT_FOUND);
         }
 
         // Créer un nouvel objet Commentaire à partir des données JSON
         $commentaire = $this->serializer->deserialize($request->getContent(), Commentaire::class, 'json');
-
-        // Assurer que la date de création est définie
-        if (empty($data['date'])) {
-            $commentaire->setDateCreation(new \DateTime()); // Si aucune date n'est fournie, utiliser la date actuelle
-        } else {
-            $commentaire->setDateCreation(new \DateTime($data['date']));
-        }
-
-        // Associer l'animal au commentaire
         $commentaire->setAnimal($animal);
+        $commentaire->setCreatedAt(new DateTimeImmutable());
 
-        // Persister le commentaire dans la base de données
+        // Enregistrer le commentaire
         $this->manager->persist($commentaire);
         $this->manager->flush();
 
-        // Retourner un message de succès
-        return $this->json(
-            ['message' => "Nouveau commentaire créé avec succès avec l'id {$commentaire->getId()}"],
-            Response::HTTP_CREATED,
-        );
+        // Retourner un message de succès avec l'ID du commentaire créé
+        return new JsonResponse([
+            'message' => 'Nouveau commentaire créé avec succès!',
+            'id' => $commentaire->getId()
+        ], Response::HTTP_CREATED);
     }
 
-    // Lire (afficher un commentaire spécifique)
+    // GET - Afficher les détails d'un commentaire spécifique
     #[Route('/{id}', name: 'show', methods: 'GET')]
-    public function show(int $id, CommentaireRepository $commentaireRepository): Response
+    public function show(int $id): JsonResponse
     {
-        // Trouver le commentaire dans la base de données par son ID
-        $commentaire = $commentaireRepository->find($id);
+        $commentaire = $this->repository->findOneBy(['id' => $id]);
 
-        // Si le commentaire n'est pas trouvé, retourner une exception
-        if (!$commentaire) {
-            throw new \Exception("Commentaire non trouvé pour l'ID {$id}");
-        }
-
-        // Retourner les informations du commentaire sous forme de JSON
-        return $this->json(
-            ['message' => "Un Commentaire trouvé : {$commentaire->getAuteur()} pour l'ID {$commentaire->getId()}"]
-        );
-    }
-
-    // Mettre à jour un commentaire existant
-    #[Route('/{id}', name: 'update', methods: 'PUT')]
-    public function update(int $id, Request $request, CommentaireRepository $commentaireRepository, EntityManagerInterface $entityManager): Response
-    {
-        // Vérifier si l'ID est bien un entier valide
-        if (!is_int($id)) {
-            return $this->json(['message' => "L'ID doit être un entier valide."], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Rechercher le commentaire par ID dans la base de données
-        $commentaire = $commentaireRepository->find($id);
-
-        // Si le commentaire n'existe pas, renvoyer une erreur 404
-        if (!$commentaire) {
-            return $this->json(['message' => "Commentaire non trouvé pour l'ID {$id}"], Response::HTTP_NOT_FOUND);
-        }
-
-        // Décoder les données JSON envoyées dans la requête
-        $data = json_decode($request->getContent(), true);
-
-        // Mettre à jour les informations du commentaire
-        $commentaire->setAuteur($data['auteur'] ?? $commentaire->getAuteur());
-        $commentaire->setContenu($data['contenu'] ?? $commentaire->getContenu());
-        $commentaire->setDateCreation(new \DateTime($data['date'] ?? $commentaire->getDateCreation()->format('Y-m-d'))); // setDateCreation utilisé
-
-        // Sauvegarder les modifications dans la base de données
-        $entityManager->flush();
-
-        // Retourner un message de succès
-        return $this->json(['message' => "Commentaire mis à jour avec succès !"], Response::HTTP_OK);
-    }
-
-    // Supprimer un commentaire
-    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
-    public function delete(int $id): Response
-    {
-        // Recherche du commentaire dans la base de données par son identifiant
-        $commentaire = $this->repository->find($id);
-
-        // Si le commentaire n'est pas trouvé, retourner un message d'erreur avec le code 404
-        if (!$commentaire) {
-            return $this->json(['message' => 'Commentaire non trouvé.'], Response::HTTP_NOT_FOUND);
-        }
-
-        // Supprimer le commentaire de la base de données
-        $this->manager->remove($commentaire);
-        $this->manager->flush();
-
-        // Retourner un message de confirmation avec le code 200 (succès)
-        return $this->json(
-            ['message' => 'Commentaire supprimé avec succès.'],
-            Response::HTTP_OK // Statut 200 OK
-        );
-    }
-
-    // Liste tous les commentaires
-    #[Route('', name: 'index', methods: 'GET')]
-    public function index(CommentaireRepository $commentaireRepository): JsonResponse
-    {
-        $commentaires = $commentaireRepository->findAll();
-
-        // Seules les informations basiques du commentaire sont retournées pour éviter la référence circulaire
-        $commentairesArray = [];
-        foreach ($commentaires as $commentaire) {
-            $commentairesArray[] = [
+        if ($commentaire) {
+            // Créer la réponse pour éviter les références circulaires
+            $responseData = [
                 'id' => $commentaire->getId(),
                 'auteur' => $commentaire->getAuteur(),
                 'contenu' => $commentaire->getContenu(),
-                'date' => $commentaire->getDateCreation()->format('Y-m-d'),
+                'created_at' => $commentaire->getCreatedAt()->format('Y-m-d H:i:s'),
+                'animal' => [
+                    'id' => $commentaire->getAnimal()->getId(),
+                    'prenom_animal' => $commentaire->getAnimal()->getPrenomAnimal()
+                ]
+            ];
+
+            return new JsonResponse([
+                'message' => 'Commentaire trouvé avec succès.',
+                'data' => $responseData
+            ], Response::HTTP_OK);
+        }
+
+        return new JsonResponse(['message' => 'Commentaire non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // DELETE - Supprimer un commentaire
+    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+    public function delete(int $id): JsonResponse
+    {
+        $commentaire = $this->repository->findOneBy(['id' => $id]);
+        if ($commentaire) {
+            $this->manager->remove($commentaire);
+            $this->manager->flush();
+
+            // Retourner un message de succès après suppression
+            return new JsonResponse(['message' => 'Commentaire supprimé avec succès.'], Response::HTTP_OK);
+        }
+
+        return new JsonResponse(['message' => 'Commentaire non trouvé.'], Response::HTTP_NOT_FOUND);
+    }
+
+    // GET - Liste tous les commentaires
+    #[Route(name: 'list', methods: 'GET')]
+    public function list(): JsonResponse
+    {
+        $commentaires = $this->repository->findAll();
+        $responseData = [];
+
+        foreach ($commentaires as $commentaire) {
+            $responseData[] = [
+                'id' => $commentaire->getId(),
+                'auteur' => $commentaire->getAuteur(),
+                'contenu' => $commentaire->getContenu(),
+                'created_at' => $commentaire->getCreatedAt()->format('Y-m-d H:i:s'),
+                'animal' => [
+                    'id' => $commentaire->getAnimal()->getId(),
+                    'prenom_animal' => $commentaire->getAnimal()->getPrenomAnimal()
+                ]
             ];
         }
 
-        return $this->json(['data' => $commentairesArray]);
+        // Retourner un message de succès avec la liste des commentaires
+        return new JsonResponse([
+            'message' => 'Liste des commentaires récupérée avec succès.',
+            'data' => $responseData
+        ], Response::HTTP_OK);
     }
 }
