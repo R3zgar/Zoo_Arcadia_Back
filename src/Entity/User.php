@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -12,51 +13,83 @@ use Symfony\Component\Security\Core\User\UserInterface;
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\GeneratedValue(strategy: "IDENTITY")]
+    #[ORM\Column(type: "integer")]
     private ?int $id = null;
 
-    #[ORM\Column(length: 180)]
+    #[ORM\Column(length: 32)]
+    private ?string $firstName = null;
+
+    #[ORM\Column(length: 64)]
+    private ?string $lastName = null;
+
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
-    /**
-     * @var list<string> The user roles
-     */
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $apiToken = null;
+
     #[ORM\Column]
     private array $roles = [];
 
-    /**
-     * @var string The hashed password
-     */
     #[ORM\Column]
-    private ?string $password = null;
-
-    #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $apiToken;
+    /** @var string|null Le mot de passe hashé */
+    #[ORM\Column]
+    private ?string $password = null;
 
     /** @throws \Exception */
     public function __construct()
     {
+        // Génère un token API unique pour l'utilisateur
         $this->apiToken = bin2hex(random_bytes(20));
     }
 
-
+    // Obtient l'ID de l'utilisateur
     public function getId(): ?int
     {
         return $this->id;
     }
 
+    // Obtient le prénom de l'utilisateur
+    public function getFirstName(): ?string
+    {
+        return $this->firstName;
+    }
+
+    // Définit le prénom de l'utilisateur
+    public function setFirstName(string $firstName): static
+    {
+        $this->firstName = $firstName;
+
+        return $this;
+    }
+
+    // Obtient le nom de famille de l'utilisateur
+    public function getLastName(): ?string
+    {
+        return $this->lastName;
+    }
+
+    // Définit le nom de famille de l'utilisateur
+    public function setLastName(string $lastName): static
+    {
+        $this->lastName = $lastName;
+
+        return $this;
+    }
+
+    // Obtient l'adresse email de l'utilisateur
     public function getEmail(): ?string
     {
         return $this->email;
     }
 
+    // Définit l'adresse email de l'utilisateur
     public function setEmail(string $email): static
     {
         $this->email = $email;
@@ -64,8 +97,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    // Obtient le token API de l'utilisateur
+    public function getApiToken(): ?string
+    {
+        return $this->apiToken;
+    }
+
+    // Définit le token API de l'utilisateur
+    public function setApiToken(string $apiToken): static
+    {
+        $this->apiToken = $apiToken;
+
+        return $this;
+    }
+
     /**
-     * A visual identifier that represents this user.
+     * Obtient un identifiant visuel qui représente cet utilisateur.
      *
      * @see UserInterface
      */
@@ -75,22 +122,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @see UserInterface
+     * Obtient les rôles de l'utilisateur.
      *
-     * @return list<string>
+     * @see UserInterface
      */
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
+        // Garantir que chaque utilisateur ait au moins le rôle ROLE_USER
         $roles[] = 'ROLE_USER';
 
         return array_unique($roles);
     }
 
-    /**
-     * @param list<string> $roles
-     */
+    // Définit les rôles de l'utilisateur
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
@@ -99,6 +144,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
+     * Obtient le mot de passe hashé.
+     *
      * @see PasswordAuthenticatedUserInterface
      */
     public function getPassword(): ?string
@@ -106,6 +153,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
+    // Définit le mot de passe hashé
     public function setPassword(string $password): static
     {
         $this->password = $password;
@@ -113,20 +161,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @see UserInterface
-     */
+    // Efface les informations sensibles de l'utilisateur (si nécessaire)
     public function eraseCredentials(): void
     {
-        // If you store any temporary, sensitive data on the user, clear it here
+        // Si vous stockez des données temporaires sensibles sur l'utilisateur, nettoyez-les ici
         // $this->plainPassword = null;
     }
 
+    // Obtient la date de création du compte
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
 
+    // Définit la date de création du compte
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
@@ -134,26 +182,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    // Obtient la date de mise à jour du compte
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
+    // Définit la date de mise à jour du compte
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
-
-    public function getApiToken(): ?string
-    {
-        return $this->apiToken;
-    }
-
-    public function setApiToken(string $apiToken): static
-    {
-        $this->apiToken = $apiToken;
 
         return $this;
     }
