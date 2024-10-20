@@ -9,12 +9,12 @@ runtime:
         - sodium
         - ctype
         - iconv
-        
 
-#variables:
-#    php:
-#        # uncomment on PHP 7.4+
-#        #opcache.preload: config/preload.php
+
+# variables :
+#    php :
+#        # à décommenter pour PHP 7.4+
+#        #opcache.preload : config/preload.php
 
 build:
     flavor: none
@@ -28,11 +28,18 @@ web:
             expires: 1h
             passthru: "/index.php"
 
-
-
 mounts:
     "/var": { source: local, source_path: var }
-    
+
+relationships:
+    # Définition de la relation avec la base de données MySQL
+    database: "mysql:db"
+
+variables:
+    env:
+        # URL de connexion à la base de données MySQL
+        DATABASE_URL: "mysql://root:UvuZ5!hBFAgAgV@127.0.0.1:3306/zoo_arcadia?serverVersion=8.0.32&charset=utf8mb4"
+
 
 hooks:
     build: |

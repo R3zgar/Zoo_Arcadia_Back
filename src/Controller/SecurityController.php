@@ -30,6 +30,8 @@ class SecurityController extends AbstractController
             content: new OA\JsonContent(
                 type: 'object',
                 properties: [
+                    new OA\Property(property: 'firstName', type: 'string', example: 'John'),
+                    new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
                     new OA\Property(property: 'email', type: 'string', example: 'adresse@email.com'),
                     new OA\Property(property: 'password', type: 'string', example: 'Mot de passe')
                 ]
@@ -54,8 +56,16 @@ class SecurityController extends AbstractController
     {
         // Désérialise le contenu JSON en un objet User
         $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+
         // Hash du mot de passe avant de l'enregistrer
         $user->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
+
+        // Définit les valeurs obligatoires (firstName, lastName, email)
+        $userData = $request->toArray();
+        $user->setFirstName($userData['firstName'] ?? null);
+        $user->setLastName($userData['lastName'] ?? null);
+        $user->setEmail($userData['email'] ?? null);
+
         // Définit la date de création de l'utilisateur
         $user->setCreatedAt(new DateTimeImmutable());
 
