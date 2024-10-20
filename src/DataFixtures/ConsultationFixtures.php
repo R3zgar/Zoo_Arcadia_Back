@@ -18,7 +18,7 @@ class ConsultationFixtures extends Fixture implements DependentFixtureInterface
     /** @throws Exception */
     public function load(ObjectManager $manager): void
     {
-        $faker = Faker\Factory::create();
+        $faker = Faker\Factory::create('fr_FR'); // Faker en français
 
         // Pour chaque consultation, on génère des données aléatoires
         for ($i = 1; $i <= self::CONSULTATION_NB_TUPLES; $i++) {
