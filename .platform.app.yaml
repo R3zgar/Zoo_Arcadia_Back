@@ -10,46 +10,31 @@ runtime:
         - ctype
         - iconv
 
-
-# variables :
-#    php :
-#        # à décommenter pour PHP 7.4+
-#        #opcache.preload : config/preload.php
-
-build:
-    flavor: none
-
 disk: 512
 
 web:
     locations:
         "/":
             root: "public"
-            expires: 1h
             passthru: "/index.php"
+            expires: 1h
 
 mounts:
     "/var": { source: local, source_path: var }
 
 relationships:
-    # Définition de la relation avec la base de données MySQL
-    database: "mysql:mysql"
+    database: "mysql:database"
 
 variables:
     env:
-        # URL de connexion à la base de données MySQL
-        DATABASE_URL: "mysql://root:UvuZ5!hBFAgAgV@127.0.0.1:3306/zoo_arcadia?serverVersion=8.0.32&charset=utf8mb4"
-
+        DATABASE_URL: "mysql://root:UvuZ5!hBFAgAgV@database.internal:3306/zoo_arcadia?serverVersion=8.0.32&charset=utf8mb4"
 
 hooks:
     build: |
         set -x -e
-
         curl -fs https://get.symfony.com/cloud/configurator | bash
-        
         NODE_VERSION=18 symfony-build
 
     deploy: |
         set -x -e
-
         symfony-deploy
