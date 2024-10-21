@@ -91,8 +91,8 @@ class SecurityController extends AbstractController
                     type: "object",
                     required: ["username", "password"],
                     properties: [
-                        new OA\Property(property: "username", type: "string"),
-                        new OA\Property(property: "password", type: "string")
+                        new OA\Property(property: "username", type: "adresse@email.com"),
+                        new OA\Property(property: "password", type: "mot de passe")
                     ]
                 )
             )
