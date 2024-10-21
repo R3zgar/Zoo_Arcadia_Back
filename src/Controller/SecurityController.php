@@ -56,29 +56,42 @@ class SecurityController extends AbstractController
     {
         // Désérialise le contenu JSON en un objet User
         $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
-
+    
         // Hash du mot de passe avant de l'enregistrer
         $user->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
-
+    
         // Définit les valeurs obligatoires (firstName, lastName, email)
         $userData = $request->toArray();
-        $user->setFirstName($userData['firstName'] ?? null);
-        $user->setLastName($userData['lastName'] ?? null);
-        $user->setEmail($userData['email'] ?? null);
-
+    
+        // Vérification des valeurs nulles
+        if (!isset($userData['firstName'])) {
+            throw new \InvalidArgumentException('Le prénom est requis.');
+        }
+        if (!isset($userData['lastName'])) {
+            throw new \InvalidArgumentException('Le nom de famille est requis.');
+        }
+        if (!isset($userData['email'])) {
+            throw new \InvalidArgumentException('L\'adresse e-mail est requise.');
+        }
+    
+        $user->setFirstName($userData['firstName']);
+        $user->setLastName($userData['lastName']);
+        $user->setEmail($userData['email']);
+    
         // Définit la date de création de l'utilisateur
         $user->setCreatedAt(new DateTimeImmutable());
-
+    
         // Sauvegarde l'utilisateur dans la base de données
         $this->manager->persist($user);
         $this->manager->flush();
-
+    
         // Retourne les informations de l'utilisateur et son token API
         return new JsonResponse(
             ['user'  => $user->getUserIdentifier(), 'apiToken' => $user->getApiToken(), 'roles' => $user->getRoles()],
             Response::HTTP_CREATED
         );
     }
+    
 
     #[Route('/login', name: 'login', methods: 'POST')]
     #[OA\Post(
@@ -179,19 +192,25 @@ class SecurityController extends AbstractController
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $this->getUser()]
         );
-
+    
         // Met à jour la date de modification
         $user->setUpdatedAt(new DateTimeImmutable());
-
-        // Si un nouveau mot de passe est fourni, le hacher et le mettre à jour
+    
+        // Vérification des valeurs nulles
         if ($request->toArray()['password'] ?? null) {
             $user->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
         }
-
+    
+        // Si le prénom ou le nom de famille est null, gérer cela
+        if ($user->getFirstName() === null || $user->getLastName() === null) {
+            throw new \InvalidArgumentException('Le prénom et le nom de famille ne peuvent pas être null.');
+        }
+    
         // Enregistre les modifications dans la base de données
         $this->manager->flush();
-
+    
         // Retourne une réponse sans contenu après la mise à jour réussie
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
+    
 }
