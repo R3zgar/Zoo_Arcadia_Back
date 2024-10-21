@@ -33,7 +33,7 @@ mounts:
 
 relationships:
     # Définition de la relation avec la base de données MySQL
-    database: "mysql:db"
+    database: "mysql:mysql"
 
 variables:
     env:
