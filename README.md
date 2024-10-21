@@ -13,7 +13,6 @@
 - **Consultations Vétérinaires** : Gestion des rapports de consultations vétérinaires.
 - **Enregistrement et Connexion des Utilisateurs** : Inscription et connexion sécurisées pour les utilisateurs avec un système d'authentification API Key.
 - **Documentation de l'API** : Documentation complète de l'API accessible via `/api/doc`.
-
 ## Prérequis
 
 Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur votre machine :
@@ -97,6 +96,8 @@ http://127.0.0.1:8000/api/doc
 
 ```json
 {
+  "fistName": "John",
+  "lastName": "Doe",
   "email": "user@example.com",
   "password": "password123"
 }
@@ -126,14 +127,18 @@ http://127.0.0.1:8000/api/doc
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR..."
+  "token": "eyJhbGciOiJIUzI1NiIsInRettrcbsddgvsbz..."
 }
 ```
 
 Utilisez ce token JWT pour toutes les futures requêtes protégées dans l'en-tête HTTP :
 
 ```
-Authorization: Bearer [votre-token]
+Authorization: API Key 
+Key: X-AUTH-TOKEN
+Value: [votre-token]
+Add to: Header
+
 ```
 
 ## Exemples de Requêtes API
@@ -182,26 +187,6 @@ Authorization: Bearer [votre-token]
 ]
 ```
 
-### 3. Créer une nouvelle consultation
-
-- **Route** : `POST /api/consultation`
-- **Corps de la requête** :
-
-```json
-{
-  "compteur": 5,
-  "id_animal": "1"
-}
-```
-
-- **Réponse** :
-
-```json
-{
-  "message": "Nouvelle consultation créée avec succès!",
-  "id": 1
-}
-```
 
 ## Tests
 
@@ -213,16 +198,45 @@ php bin/phpunit
 
 ## Déploiement
 
-### Hébergement avec AlwaysData
+## Déploiement sur Platform.sh
 
-1. Créez un compte sur [AlwaysData](https://www.alwaysdata.com).
-2. Configurez une nouvelle application Symfony/PHP.
-3. Poussez votre code et votre base de données MySQL via Git.
+1. Assurez-vous que votre projet est activé sur **Platform.sh**.
 
-### Utilisation de FTP avec FileZilla
+2. **Ajoutez les fichiers Platform.sh** nécessaires :
+    - Créez un fichier `.platform.app.yaml` pour configurer l'application sur Platform.sh.
 
-1. Connectez-vous à votre serveur FTP.
-2. Déployez les fichiers du projet et configurez les variables d'environnement.
+   Voici un exemple basique :
+
+   ```yaml
+   name: zooarcadia
+   type: 'php:8.1'
+   disk: 1024
+
+   build:
+       flavor: composer
+
+   relationships:
+       database: 'mysql:mysql'
+
+   web:
+       locations:
+           '/':
+               root: 'public'
+               passthru: '/index.php'
+   ```
+
+3. **Poussez votre code** sur Platform.sh :
+
+   ```bash
+   git add .
+   git commit -m "Déploiement sur Platform.sh"
+   git push platform main
+   ```
+
+4. **Base de données** : Vous pouvez importer votre base de données MariaDB directement depuis MySQL Workbench ou via Platform.sh.
+
+   Utilisez l'interface de **Platform.sh** pour définir les variables d'environnement comme `DATABASE_URL`.
+
 
 ## Auteurs
 
