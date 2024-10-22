@@ -13,3 +13,8 @@ employee_home:
 admin_home:
     path: /admin
     controller: App\Controller\AdminController::index
+
+api_users:
+    path: /api/users
+    controller: App\Controller\UserController::getUsers
+    methods: GET

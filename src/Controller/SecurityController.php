@@ -172,6 +172,7 @@ class SecurityController extends AbstractController
                 properties: [
                     new OA\Property(property: 'firstName', type: 'string', example: 'Nouveau prénom'),
                     new OA\Property(property: 'lastName', type: 'string', example: 'Nouveau nom de famille'),
+                    new OA\Property(property: 'password', type: 'string', example: 'Nouveau mot de passe'),
                     new OA\Property(property: 'password', type: 'string', example: 'Nouveau mot de passe')
                 ]
             )
@@ -212,5 +213,96 @@ class SecurityController extends AbstractController
         // Retourne une réponse sans contenu après la mise à jour réussie
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
+
+
+    #[Route('/api/admin', name: 'api_doc_admin', methods: 'GET')]
+#[OA\Get(
+    path: "/api/admin",
+    summary: "Documentation pour les Administrateurs",
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: "Documentation spécifique pour le rôle Administrateur"
+        )
+    ]
+)]
+public function adminDoc(): JsonResponse
+{
+    // Documentation pour les actions que les administrateurs peuvent faire
+    $documentation = [
+        'description' => "Les administrateurs peuvent gérer les utilisateurs, les rôles, et accéder aux zones d'administration.",
+        'actions' => [
+            'Créer un utilisateur' => '/api/admin/create-user',
+            'Modifier un utilisateur' => '/api/admin/edit-user',
+            'Supprimer un utilisateur' => '/api/admin/delete-user',
+            'Voir tous les utilisateurs' => '/api/admin/list-users'
+        ]
+    ];
+
+    return new JsonResponse($documentation);
+}
+
+#[Route('/api/employee', name: 'api_doc_employee', methods: 'GET')]
+#[OA\Get(
+    path: "/api/employee",
+    summary: "Documentation pour les Employés",
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: "Documentation spécifique pour le rôle Employé"
+        )
+    ]
+)]
+public function employeeDoc(): JsonResponse
+{
+    // Documentation pour les actions que les employés peuvent faire
+    $documentation = [
+        'description' => "Les employés peuvent consulter et gérer les commentaires des visiteurs, et interagir avec les informations des animaux.",
+        'actions' => [
+            'Consulter les commentaires' => '/api/employee/list-comments',
+            'Valider un commentaire' => '/api/employee/validate-comment',
+            'Supprimer un commentaire' => '/api/employee/delete-comment',
+            'Voir les animaux' => '/api/employee/list-animals'
+        ]
+    ];
+
+    return new JsonResponse($documentation);
+}
+
+#[Route('/api/veterinaire', name: 'api_doc_veterinaire', methods: 'GET')]
+#[OA\Get(
+    path: "/apic/veterinaire",
+    summary: "Documentation pour les Vétérinaires",
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: "Documentation spécifique pour le rôle Vétérinaire"
+        )
+    ]
+)]
+public function veterinaireDoc(): JsonResponse
+{
+    // Documentation pour les actions que les vétérinaires peuvent faire
+    $documentation = [
+        'description' => "Les vétérinaires peuvent consulter et mettre à jour les rapports des animaux, et gérer les informations de santé des animaux.",
+        'actions' => [
+            'Consulter les rapports vétérinaires' => '/api/veterinaire/list-reports',
+            'Ajouter un rapport vétérinaire' => '/api/veterinaire/add-report',
+            'Modifier un rapport vétérinaire' => '/api/veterinaire/edit-report',
+            'Supprimer un rapport vétérinaire' => '/api/veterinaire/delete-report'
+        ]
+    ];
+
+    return new JsonResponse($documentation);
+}
+
+public function getUsers(UserRepository $userRepository): JsonResponse
+{
+    $users = $userRepository->findAll();
+    return $this->json($users, 200, [], ['groups' => 'user:read']);
+}
+
+
     
 }
+
