@@ -172,7 +172,6 @@ class SecurityController extends AbstractController
                 properties: [
                     new OA\Property(property: 'firstName', type: 'string', example: 'Nouveau prénom'),
                     new OA\Property(property: 'lastName', type: 'string', example: 'Nouveau nom de famille'),
-                    new OA\Property(property: 'password', type: 'string', example: 'Nouveau mot de passe'),
                     new OA\Property(property: 'password', type: 'string', example: 'Nouveau mot de passe')
                 ]
             )

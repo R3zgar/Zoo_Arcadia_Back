@@ -11,9 +11,6 @@ class DefaultController extends AbstractController
     #[Route('/')]
     public function home(): Response
     {
-        // CALL DATABASE
-        // SEND AN EMAIL
-        // CREATE $this->render()
-        return new Response('Bonjour !');
+        return $this->render('accueil-back.html.twig');
     }
 }

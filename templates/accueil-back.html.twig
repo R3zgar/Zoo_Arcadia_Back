@@ -1,0 +1,65 @@
+{# templates/home.html.twig #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoo Arcadia</title>
+    <style>
+        /* Styles pour la page d'accueil */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 1.2em;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* Palette de couleurs pour Zoo Arcadia */
+        h1, p {
+            color: #1d8348;
+        }
+
+        /* Style pour le bouton */
+        .explore-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #1d8348;
+            color: white;
+            font-size: 1em;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .explore-button:hover {
+            background-color: #145a32;
+        }
+    </style>
+</head>
+<body>
+<h1>Bienvenue sur le site de Zoo Arcadia !</h1>
+<p>Découvrez une expérience immersive et éducative avec notre faune diversifiée, et explorez nos initiatives pour la protection de la nature.</p>
+<a href="https://127.0.0.1:8000/api/doc" class="explore-button">Explorez le /api/doc</a>
+</body>
+</html>
