@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zoo Arcadia</title>
+    <title>Zoo Arcadia - Accueil</title>
     <style>
         /* Styles pour la page d'accueil */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f8ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f8ff 40%, #d5f3e5);
             color: #333;
             display: flex;
             flex-direction: column;
@@ -21,17 +21,20 @@
 
         h1 {
             color: #2c3e50;
-            font-size: 2.5em;
+            font-size: 3em;
             margin-bottom: 20px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         p {
             font-size: 1.2em;
             text-align: center;
-            max-width: 600px;
-            line-height: 1.6;
+            max-width: 700px;
+            line-height: 1.8;
+            margin: 0 20px;
+            color: #34495e;
         }
 
         /* Palette de couleurs pour Zoo Arcadia */
@@ -41,25 +44,62 @@
 
         /* Style pour le bouton */
         .explore-button {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
             margin-top: 30px;
-            padding: 10px 20px;
+            padding: 15px 30px;
             background-color: #1d8348;
             color: white;
-            font-size: 1em;
-            border-radius: 5px;
+            font-size: 1.2em;
+            border-radius: 30px;
             text-decoration: none;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .explore-button:hover {
             background-color: #145a32;
+            transform: translateY(-3px);
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .explore-button img {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Style pour le footer */
+        footer {
+            position: absolute;
+            bottom: 10px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+            width: 100%;
+        }
+
+        footer a {
+            color: #1d8348;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: #145a32;
         }
     </style>
 </head>
 <body>
-<h1>Bienvenue sur le site de Zoo Arcadia !</h1>
-<p>Découvrez une expérience immersive et éducative avec notre faune diversifiée, et explorez nos initiatives pour la protection de la nature.</p>
-<a href="https://127.0.0.1:8000/api/doc" class="explore-button">Explorez le /api/doc</a>
+<h1>Bienvenue sur Zoo Arcadia !</h1>
+<p>Plongez au cœur de la biodiversité et explorez notre engagement pour la conservation de la nature et la protection des espèces rares. Profitez d'une visite inoubliable et éducative à travers nos habitats.</p>
+<a href="https://127.0.0.1:8000/api/doc" class="explore-button">
+    <img src="https://img.icons8.com/ios-filled/50/ffffff/document.png" alt="Documentation Icon">
+    Explorez notre documentation API
+</a>
+
+<footer>
+    <p>&copy; {{ "now"|date("Y") }} Zoo Arcadia. Tous droits réservés. | <a href="https://127.0.0.1:8000/api/doc">Contactez-nous</a></p>
+</footer>
 </body>
 </html>
