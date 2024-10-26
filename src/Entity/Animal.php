@@ -36,9 +36,13 @@ class Animal
     #[ORM\JoinColumn(nullable: false, name: 'habitat_id', referencedColumnName: 'id')]
     private ?Habitat $habitat = null;
 
+    // Ajoutez ce champ pour suivre le nombre de vues
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private $view_count = 0;
+
     public function __construct()
     {
-        $this->createdAt = new DateTimeImmutable(); // Otomatik oluşturulma zamanı
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -129,4 +133,22 @@ class Animal
 
         return $this;
     }
+
+    public function getViewCount(): int
+    {
+        return $this->view_count;
+    }
+
+    public function setViewCount(int $view_count): self
+    {
+        $this->view_count = $view_count;
+        return $this;
+    }
+
+    public function incrementViewCount(): self
+    {
+        $this->view_count++;
+        return $this;
+    }
+
 }

@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Animal;
 use App\Repository\AnimalRepository;
 use App\Repository\HabitatRepository;
+use App\Service\MongoDBService;
 use OpenApi\Attributes as OA;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,7 +22,9 @@ class AnimalController extends AbstractController
         private EntityManagerInterface $manager,
         private AnimalRepository $repository,
         private SerializerInterface $serializer,
-        private UrlGeneratorInterface $urlGenerator
+        private UrlGeneratorInterface $urlGenerator,
+        private MongoDBService $mongoDBService
+
     ) {
     }
 
@@ -91,9 +94,12 @@ class AnimalController extends AbstractController
         $animal->setHabitat($habitat);
         $animal->setCreatedAt(new DateTimeImmutable());
 
-        // Enregistrement de l'animal
+        // Enregistrement de l'animal dans MySQL
         $this->manager->persist($animal);
         $this->manager->flush();
+
+        // Ajouter l'animal à MongoDB avec un view_count initial à 0
+        $this->mongoDBService->incrementViewCount($animal->getPrenomAnimal());
 
         // Générer l'URL de l'élément créé
         $location = $this->urlGenerator->generate(
@@ -109,8 +115,9 @@ class AnimalController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    // GET - Afficher les détails d'un animal
-    #[Route('/{id}', name: 'show', methods: ['GET'])]
+
+// GET - Afficher les détails d'un animal
+    #[Route('/{id<\d+>}', name: 'show', methods: ['GET'])]
 
     #[OA\Get(
         path: '/api/animal/{id}',
@@ -130,6 +137,7 @@ class AnimalController extends AbstractController
                         new OA\Property(property: 'race_animal', type: 'string', example: 'Lion'),
                         new OA\Property(property: 'etat_animal', type: 'string', example: 'En bonne santé'),
                         new OA\Property(property: 'image', type: 'string', example: 'simba.jpg'),
+                        new OA\Property(property: 'view_count', type: 'integer', example: 5),
                         new OA\Property(property: 'habitat', type: 'object', properties: [
                             new OA\Property(property: 'id', type: 'integer', example: 1),
                             new OA\Property(property: 'nom_habitat', type: 'string', example: 'Savane')
@@ -146,6 +154,10 @@ class AnimalController extends AbstractController
         $animal = $this->repository->findOneBy(['id' => $id]);
 
         if ($animal) {
+            // Incrémenter le compteur de vues dans MongoDB
+            $this->mongoDBService->incrementViewCount($animal->getPrenomAnimal());
+            $viewCount = $this->mongoDBService->getViewCount($animal->getPrenomAnimal());
+
             // Créer la réponse manuellement pour éviter les références circulaires
             $responseData = [
                 'id' => $animal->getId(),
@@ -153,6 +165,7 @@ class AnimalController extends AbstractController
                 'race_animal' => $animal->getRaceAnimal(),
                 'etat_animal' => $animal->getEtatAnimal(),
                 'image' => $animal->getImage(),
+                'view_count' => $viewCount,
                 'habitat' => [
                     'id' => $animal->getHabitat()->getId(),
                     'nom_habitat' => $animal->getHabitat()->getNomHabitat()
@@ -227,6 +240,7 @@ class AnimalController extends AbstractController
             }
 
             // Mise à jour des autres données de l'animal
+            $oldAnimalName = $animal->getPrenomAnimal(); // Sauvegarder l'ancien nom pour mise à jour dans MongoDB
             $animal->setPrenomAnimal($data['prenom_animal']);
             $animal->setRaceAnimal($data['race_animal']);
             $animal->setEtatAnimal($data['etat_animal']);
@@ -235,12 +249,21 @@ class AnimalController extends AbstractController
 
             $this->manager->flush();
 
+            // Mettre à jour l'entrée dans MongoDB si le nom de l'animal a changé
+            if ($oldAnimalName !== $data['prenom_animal']) {
+                // Supprimer l'ancien enregistrement dans MongoDB
+                $this->mongoDBService->deleteAnimalViewCount($oldAnimalName);
+                // Ajouter le nouveau avec un view_count à 0
+                $this->mongoDBService->incrementViewCount($animal->getPrenomAnimal());
+            }
+
             // Retourner un message de succès
             return new JsonResponse(['message' => 'Animal mis à jour avec succès!'], Response::HTTP_OK);
         }
 
         return new JsonResponse(null, Response::HTTP_NOT_FOUND);
     }
+
 
     // DELETE - Supprimer un animal
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
@@ -309,12 +332,16 @@ class AnimalController extends AbstractController
         $responseData = [];
 
         foreach ($animals as $animal) {
+
+            $viewCount = $this->mongoDBService->getViewCount($animal->getPrenomAnimal());
+
             $responseData[] = [
                 'id' => $animal->getId(),
                 'prenom_animal' => $animal->getPrenomAnimal(),
                 'race_animal' => $animal->getRaceAnimal(),
                 'etat_animal' => $animal->getEtatAnimal(),
                 'image' => $animal->getImage(),
+                'view_count' => $viewCount,
                 'habitat' => [
                     'id' => $animal->getHabitat()->getId(),
                     'nom_habitat' => $animal->getHabitat()->getNomHabitat()
@@ -327,5 +354,21 @@ class AnimalController extends AbstractController
             'message' => 'Liste des animaux récupérée avec succès.',
             'data' => $responseData
         ], Response::HTTP_OK);
+    }
+
+    // Ajoute une nouvelle route pour synchroniser toutes les vues des animaux
+    #[Route('/sync-all', name: 'sync_all_view_counts', methods: ['GET'])]
+    public function syncAllViewCounts(): JsonResponse
+    {
+        // Récupère tous les animaux depuis la base de données MySQL
+        $animals = $this->repository->findAll();
+
+        // Parcourt chaque animal pour incrémenter le compteur de vues dans MongoDB
+        foreach ($animals as $animal) {
+            $this->mongoDBService->incrementViewCount($animal->getPrenomAnimal());
+        }
+
+        // Retourne un message de succès après la synchronisation
+        return new JsonResponse(['message' => 'Tous les animaux ont été synchronisés avec MongoDB.'], Response::HTTP_OK);
     }
 }

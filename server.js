@@ -5,7 +5,6 @@ console.log('MONGODB_URI:', process.env.MONGODB_URI);
 // Importation des bibliothèques nécessaires
 const express = require('express');
 const connectDB = require('./db'); // Importation du fichier de connexion à MongoDB
-
 const animalRoutes = require('./routes/animal'); // Importer les routes pour les statistiques d'animaux
 
 const app = express(); // Création de l'application Express
