@@ -1,19 +1,22 @@
-# config/packages/security.yaml
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    # Configuration pour le hachage des mots de passe
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-    # https://symfony.com/doc/current/security.html#where-do-users-come-from-user-providers
+    
+    # Fournisseurs d'utilisateurs - Détermine où les utilisateurs sont chargés
     providers:
-        # used to reload user from session & other features (e.g. switch_user)
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
+
+    # Pare-feux de sécurité
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+
+        # Pare-feu principal pour les API sécurisées
         main:
             lazy: true
             stateless: true
@@ -22,24 +25,27 @@ security:
             json_login:
                 check_path: /api/login
 
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#firewalls-authentication
+        # Pare-feu pour la connexion API
+        login:
+            pattern: ^/api/login
+            stateless: true
+            json_login:
+                check_path: /api/login
+                username_path: email
+                password_path: password
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Easy way to control access for large sections of your site
-    # Note: Only the *first* access control that matches will be used
+    # Contrôles d'accès
     access_control:
-        # Zones pour Administrateur, Employé, et Vétérinaire
+        # Zones d'accès pour les Administrateurs, Employés et Vétérinaires
         - { path: ^/manage-users, roles: ROLE_ADMIN }
         - { path: ^/manage-services, roles: ROLE_EMPLOYE }
         - { path: ^/manage-habitats, roles: ROLE_VETERINAIRE }
 
-        # Registration et Login accessibles au public
+        # Accès public pour l'inscription et la connexion
         - { path: ^/api/registration, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users, roles: ROLE_ADMIN }
         - { path: ^/api, roles: ROLE_USER }
 
 when@test:

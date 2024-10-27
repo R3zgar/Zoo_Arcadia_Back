@@ -356,6 +356,27 @@ class AnimalController extends AbstractController
         ], Response::HTTP_OK);
     }
 
+    // GET - Récupérer les statistiques des animaux (incluant view_count)
+    #[Route('/stats', name: 'get_animal_stats', methods: ['GET'])]
+    public function getAnimalStats(): JsonResponse
+    {
+        $animals = $this->repository->findAll();
+        $responseData = [];
+
+        foreach ($animals as $animal) {
+            $viewCount = $this->mongoDBService->getViewCount($animal->getPrenomAnimal());
+
+            $responseData[] = [
+                'id' => $animal->getId(),
+                'prenom_animal' => $animal->getPrenomAnimal(),
+                'view_count' => $viewCount,
+            ];
+        }
+
+        return new JsonResponse(['data' => $responseData], Response::HTTP_OK);
+    }
+
+
     // Ajoute une nouvelle route pour synchroniser toutes les vues des animaux
     #[Route('/sync-all', name: 'sync_all_view_counts', methods: ['GET'])]
     public function syncAllViewCounts(): JsonResponse
