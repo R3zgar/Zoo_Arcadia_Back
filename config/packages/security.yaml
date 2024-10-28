@@ -2,7 +2,7 @@ security:
     # Configuration pour le hachage des mots de passe
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-    
+
     # Fournisseurs d'utilisateurs - Détermine où les utilisateurs sont chargés
     providers:
         app_user_provider:
@@ -25,6 +25,12 @@ security:
             json_login:
                 check_path: /api/login
 
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\ApiTokenAuthenticator
+
         # Pare-feu pour la connexion API
         login:
             pattern: ^/api/login
@@ -45,9 +51,9 @@ security:
         - { path: ^/api/registration, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
-        - { path: ^/api/users, roles: ROLE_ADMIN }
+        - { path: ^/api/commentaire, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
-        - { path: ^/api/commentaire, roles: IS_AUTHENTICATED_FULLY }
+
 
 when@test:
     security:
