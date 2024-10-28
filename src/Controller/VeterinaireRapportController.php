@@ -287,9 +287,9 @@ class VeterinaireRapportController extends AbstractController
                 'etat_animal' => $rapport->getEtatAnimal(),
                 'nourriture' => $rapport->getNourriture(),
                 'grammage' => $rapport->getGrammage(),
-                'date_passage' => $rapport->getDatePassage()->format('Y-m-d'),
-                'createdAt' => $rapport->getCreatedAt(),
-                'updatedAt' => $rapport->getUpdatedAt()
+                'date_passage' => $rapport->getDatePassage() ? $rapport->getDatePassage()->format('d-m-Y / H:i:s') : null,
+                'createdAt' => $rapport->getCreatedAt() ? $rapport->getCreatedAt()->format('d-m-Y / H:i:s') : null,
+                'updatedAt' => $rapport->getUpdatedAt() ? $rapport->getUpdatedAt()->format('d-m-Y / H:i:s') : null
             ];
         }
 
@@ -299,4 +299,6 @@ class VeterinaireRapportController extends AbstractController
             'data' => $responseData
         ], Response::HTTP_OK);
     }
+
+
 }
