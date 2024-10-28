@@ -81,6 +81,9 @@ class CommentaireController extends AbstractController
         $commentaire->setAnimal($animal);
         $commentaire->setCreatedAt(new DateTimeImmutable());
 
+        // Définir le statut par défaut à "En attente"
+        $commentaire->setStatus('En attente');
+
         // Enregistrer le commentaire
         $this->manager->persist($commentaire);
         $this->manager->flush();
@@ -177,6 +180,8 @@ class CommentaireController extends AbstractController
         return new JsonResponse(['message' => 'Commentaire non trouvé.'], Response::HTTP_NOT_FOUND);
     }
 
+
+
     // GET - Liste tous les commentaires
     #[Route(name: 'list', methods: 'GET')]
 
@@ -217,6 +222,7 @@ class CommentaireController extends AbstractController
                 'id' => $commentaire->getId(),
                 'auteur' => $commentaire->getAuteur(),
                 'contenu' => $commentaire->getContenu(),
+                'status' => $commentaire->getStatus(),
                 'created_at' => $commentaire->getCreatedAt()->format('Y-m-d H:i:s'),
                 'animal' => [
                     'id' => $commentaire->getAnimal()->getId(),
@@ -231,4 +237,27 @@ class CommentaireController extends AbstractController
             'data' => $responseData
         ], Response::HTTP_OK);
     }
+
+// PATCH - Approuver un commentaire
+    #[Route('/{id}/approve', name: 'approve', methods: ['PATCH'])]
+    public function approve(int $id): JsonResponse
+    {
+        $commentaire = $this->repository->find($id);
+
+        // Vérification si le commentaire existe
+        if (!$commentaire) {
+            return new JsonResponse(['message' => 'Commentaire non trouvé.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Mettre à jour le statut du commentaire en français
+        $commentaire->setStatus('Approuvé');
+        $this->manager->flush();
+
+        return new JsonResponse([
+            'message' => 'Commentaire approuvé avec succès!',
+            'id' => $commentaire->getId()
+        ], Response::HTTP_OK);
+    }
+
+
 }

@@ -26,6 +26,21 @@ class Commentaire
     #[ORM\Column(type: 'datetime_immutable', options: ['default' => 'CURRENT_TIMESTAMP'])]
     private ?\DateTimeImmutable $created_at = null;
 
+    #[ORM\Column(type: 'string', length: 50, options: ['default' => 'En attente'])]
+    private ?string $status = 'En attente';
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+
     // Getter pour contenu
     public function getContenu(): ?string
     {
