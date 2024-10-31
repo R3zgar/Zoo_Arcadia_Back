@@ -15,7 +15,7 @@
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/migrations": "^3.8",
         "doctrine/mongodb-odm-bundle": "*",
-        "doctrine/orm": "*",
+        "doctrine/orm": "^3.3",
         "doctrine/persistence": "^3.3",
         "fakerphp/faker": "^1.23",
         "mongodb/mongodb": "^1.20",
