@@ -1,27 +1,37 @@
-
 # Zoo Arcadia - Back-End
 
 ## Description du Projet
 
-**Zoo Arcadia** est une application web conçue pour gérer efficacement un zoo. Le projet permet la gestion complète des animaux, des habitats, des services offerts par le zoo, ainsi que des consultations vétérinaires. Il comprend également des fonctionnalités d'enregistrement, de connexion, et de gestion des utilisateurs avec une authentification sécurisée. Ce projet est développé en **Symfony 6.4** avec une base de données **MySQL**, et l'API est documentée grâce à **NelmioApiDoc**. Chaque entité est équipée de ses opérations CRUD pour permettre la gestion des données en toute simplicité.
+**Zoo Arcadia** est une application web avancée conçue pour la gestion d'un zoo moderne. Ce projet back-end permet une gestion complète des animaux, des habitats, des services et des consultations vétérinaires, avec une authentification sécurisée pour différents rôles (administrateur, employé, vétérinaire). Développé avec **Symfony 6.4** et prenant en charge **MySQL** et **MongoDB** pour le stockage de données, le projet est entièrement documenté et accessible via une API REST, facilitée par **NelmioApiDoc**. Les fonctionnalités CRUD pour chaque entité assurent une gestion souple et intuitive.
 
 ## Fonctionnalités Principales
 
-- **Gestion des Animaux** : CRUD complet (ajout, lecture, mise à jour et suppression) pour la gestion des animaux du zoo.
-- **Gestion des Habitats** : Chaque animal est associé à un habitat spécifique, comme la Savane, la Jungle ou le Marais.
-- **Gestion des Services** : Gérer les services proposés par le zoo, tels que les visites guidées ou les restaurants.
-- **Consultations Vétérinaires** : Gestion des rapports de consultations vétérinaires.
-- **Enregistrement et Connexion des Utilisateurs** : Inscription et connexion sécurisées pour les utilisateurs avec un système d'authentification API Key.
-- **Documentation de l'API** : Documentation complète de l'API accessible via `/api/doc`.
+- **Gestion des Animaux** : Création, visualisation, mise à jour et suppression des informations des animaux du zoo.
+- **Gestion des Habitats** : Attribution des animaux à leurs habitats (e.g., Savane, Jungle, Marais) avec une structure de relation complète.
+- **Gestion des Services** : CRUD des services proposés tels que les visites guidées, les restaurants, etc.
+- **Consultations Vétérinaires** : Gestion des rapports de santé des animaux.
+- **Authentification Sécurisée** : Inscription et connexion avec des rôles et permissions spécifiques, utilisant un système d'API Key.
+- **Documentation API** : Documentation complète accessible via `/api/doc`, facilitant l'intégration et les tests avec Postman.
+
+## Technologies Utilisées
+
+### Backend
+- **Symfony 6.4** : Framework back-end principal, avec gestion des routes, de la sécurité et des entités.
+- **PHP 8.1+** : Langage de programmation pour le développement du projet.
+- **MySQL** : Base de données relationnelle pour le stockage structuré des données.
+- **MongoDB** : Utilisé pour le stockage NoSQL, notamment pour les données analytiques et statistiques.
+- **Node.js** et **Postman** : Outils pour les tests et la documentation des API.
+
 ## Prérequis
 
-Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur votre machine :
+Avant de commencer, assurez-vous d'avoir les éléments suivants installés :
 
 - **PHP 8.1 ou supérieur**
-- **Composer** pour la gestion des dépendances
-- **Symfony CLI** (optionnel mais recommandé)
-- **MySQL** comme base de données
-- **Git** pour le versionnement du code
+- **Composer** pour la gestion des dépendances PHP
+- **Symfony CLI** (facultatif mais recommandé)
+- **MySQL** et **MongoDB** pour la gestion des données
+- **Git** pour le versionnement
+- **Postman** pour tester les endpoints de l’API
 
 ## Installation
 
@@ -44,10 +54,12 @@ composer install
 
 ### 3. Configurer la base de données
 
-Modifiez le fichier `.env` pour configurer la connexion à votre base de données MySQL :
+Modifiez le fichier .env pour configurer les connexions aux bases de données MySQL et MongoDB :
 
 ```
 DATABASE_URL="mysql://[utilisateur]:[motdepasse]@127.0.0.1:3306/zooarcadia"
+MONGODB_URL="mongodb://127.0.0.1:27017"
+MONGODB_DB="zooarcadia_analytics"
 ```
 
 Créez la base de données et exécutez les migrations pour générer les tables :
@@ -65,9 +77,9 @@ Chargez les données fictives pour tester les fonctionnalités :
 php bin/console doctrine:fixtures:load
 ```
 
-### 5. Démarrer le serveur local
+### 5. Démarrer le serveur de développement
 
-Démarrez le serveur de développement Symfony :
+Démarrez le serveur Symfony local pour tester l'application :
 
 ```bash
 symfony server:start
@@ -78,10 +90,12 @@ Ou utilisez PHP :
 ```bash
 php -S 127.0.0.1:8000 -t public/
 ```
+L'application sera accessible à l'adresse http://localhost:8000.
+
 
 ### 6. Accéder à la documentation de l'API
 
-Vous pouvez consulter la documentation complète de l'API à l'adresse suivante :
+L'API est documentée avec NelmioApiDoc. Vous pouvez consulter la documentation complète de l'API à l'adresse suivante :
 
 ```
 http://127.0.0.1:8000/api/doc
@@ -138,7 +152,6 @@ Authorization: API Key
 Key: X-AUTH-TOKEN
 Value: [votre-token]
 Add to: Header
-
 ```
 
 ## Exemples de Requêtes API
@@ -187,12 +200,13 @@ Add to: Header
 ]
 ```
 
-
 ## Tests
 
 Pour exécuter les tests unitaires et fonctionnels du projet :
 
 ```bash
+application Postman
+
 php bin/phpunit
 ```
 
