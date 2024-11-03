@@ -80,10 +80,10 @@
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
         "post-install-cmd": [
-            "@php artisan optimize"
+            "@auto-scripts"
         ],
         "post-update-cmd": [
-            "@php artisan optimize"
+            "@auto-scripts"
         ]
     },
     "conflict": {
