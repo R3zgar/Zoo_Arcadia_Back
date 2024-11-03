@@ -1,0 +1,14 @@
+doctrine_mongodb:
+  # Configuration de la connexion à MongoDB
+  connections:
+    default:
+      server: '%env(MONGODB_URI)%' # URI de connexion, défini dans le fichier .env
+      options: {} # Options supplémentaires pour la connexion (ex : paramètres de sécurité)
+
+  # Base de données par défaut pour les documents MongoDB
+  default_database: 'zooarcadia' # Nom de la base de données, défini dans le fichier .env
+
+  # Gestionnaire de documents pour la cartographie des entités MongoDB
+  document_managers:
+    default:
+      auto_mapping: true # Active la cartographie automatique des documents
