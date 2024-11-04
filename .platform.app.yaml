@@ -9,6 +9,7 @@ runtime:
         - sodium
         - ctype
         - iconv
+        - mongodb
 
 disk: 512
 
