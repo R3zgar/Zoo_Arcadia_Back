@@ -27,7 +27,11 @@ relationships:
 
 variables:
     env:
-         : "mysql://root:UvuZ5!hBFAgAgV@database.internal:3306/zoo_arcadia?serverVersion=8.0.32&charset=utf8mb4"
+        DATABASE_USER: "root"
+        DATABASE_PASSWORD: "UvuZ54hBFAgAgV"
+        DATABASE_HOST: "database.internal"
+        DATABASE_NAME: "zoo_arcadia"
+        DATABASE_URL: "mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/${DATABASE_NAME}?serverVersion=8.0.32&charset=utf8mb4"
 
 hooks:
     build: |
