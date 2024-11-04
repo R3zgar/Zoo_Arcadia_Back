@@ -19,7 +19,7 @@
         "doctrine/persistence": "^3.3",
         "fakerphp/faker": "^1.23",
         "mongodb/mongodb": "^1.20",
-        "nelmio/api-doc-bundle": "^4.32",
+        "nelmio/api-doc-bundle": "^4.33",
         "nelmio/cors-bundle": "*",
         "phpdocumentor/reflection-docblock": "^5.4",
         "phpstan/phpdoc-parser": "^1.33",
