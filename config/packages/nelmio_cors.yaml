@@ -1,6 +1,5 @@
 nelmio_cors:
     defaults:
-        origin_regex: true
         allow_origin: ['https://rzgar.alwaysdata.net', 'https://master-7rqtwti-unhphrs4kyslw.fr-3.platformsh.site', 'http://localhost:3000', 'https://127.0.0.1:8000']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization', 'X-AUTH-TOKEN']
