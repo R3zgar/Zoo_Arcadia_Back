@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\AnimalRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use DateTimeImmutable;
 
@@ -40,9 +42,16 @@ class Animal
 //    #[ORM\Column(type: 'integer', options: ['default' => 0])]
 //    private $view_count = 0;
 
+    #[ORM\OneToMany(mappedBy: 'animal', targetEntity: Commentaire::class)]
+    private Collection $commentaires;
+
+    #[ORM\OneToMany(mappedBy: 'animal', targetEntity: VeterinaireRapport::class)]
+    private Collection $veterinaireRapports;
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
+        $this->commentaires = new ArrayCollection();
+        $this->veterinaireRapports = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -133,6 +142,63 @@ class Animal
 
         return $this;
     }
+
+
+
+    public function getCommentaires(): Collection
+    {
+        return $this->commentaires;
+    }
+
+    public function addCommentaire(Commentaire $commentaire): self
+    {
+        if (!$this->commentaires->contains($commentaire)) {
+            $this->commentaires[] = $commentaire;
+            $commentaire->setAnimal($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommentaire(Commentaire $commentaire): self
+    {
+        if ($this->commentaires->removeElement($commentaire)) {
+            if ($commentaire->getAnimal() === $this) {
+                $commentaire->setAnimal(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getVeterinaireRapports(): Collection
+    {
+        return $this->veterinaireRapports;
+    }
+
+    public function addVeterinaireRapport(VeterinaireRapport $rapport): self
+    {
+        if (!$this->veterinaireRapports->contains($rapport)) {
+            $this->veterinaireRapports[] = $rapport;
+            $rapport->setAnimal($this);
+        }
+
+        return $this;
+    }
+
+    public function removeVeterinaireRapport(VeterinaireRapport $rapport): self
+    {
+        if ($this->veterinaireRapports->removeElement($rapport)) {
+            if ($rapport->getAnimal() === $this) {
+                $rapport->setAnimal(null);
+            }
+        }
+
+        return $this;
+    }
+
+
+
 //
 //    public function getViewCount(): int
 //    {
